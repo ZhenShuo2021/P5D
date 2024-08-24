@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Tuple, Dict, Optional
 
-from src.logger import LogLevel, LogManager
+from logger import LogLevel, LogManager
 from utils.file_utils import ConfigLoader, safe_move, batch_move, move_all_tagged
 from utils.string_utils import is_system, is_english, is_japanese
 

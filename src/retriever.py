@@ -6,7 +6,7 @@ import concurrent.futures
 import threading
 
 from utils.string_utils import color_text
-from src.logger import LogLevel, LogManager, logger
+from logger import LogLevel, LogManager, logger
 
 # Parameters
 base_url = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
@@ -17,13 +17,17 @@ progress_idx = 0
 
 
 def retrieve_artwork():
-    html_content = read_html("./data/" + html_file + ".html")
+    try:
+        html_content = read_html("./data/" + html_file + ".html")
+    except:
+        FileNotFoundError
+        return
     urls = extract_urls(html_content)
     # print(f"遺失作品數量：{len(urls)}")
 
     found_posts, not_found_posts, take_down_posts = process_urls(base_url, urls)
     export_txt(f'./data/{html_file}_retrieve.txt', found_posts, not_found_posts, take_down_posts)
-    print(color_text(f"結果已輸出到 {os.getcwd()}/data/{html_file}_retrieve.txt", color='black'))
+    print(color_text(f"結果已輸出到 {os.getcwd()}/data/{html_file}_retrieve.txt"))
 
 
 def print_progress(idx, total_urls, width=50):
@@ -110,4 +114,4 @@ def export_txt(filename, found_posts, not_found_posts, take_down_posts):
 
 
 if __name__ == "__main__":
-    retrieve_artwork(base_url, html_file)
+    retrieve_artwork()

@@ -11,7 +11,7 @@ from utils.string_utils import is_system, color_text, split_tags
 # Parameters
 # working_dir: 統計標籤的工作目錄
 # file_name: 輸出標籤和圖表的檔案名稱
-config_loader = ConfigLoader('config/config.toml')
+config_loader = ConfigLoader()
 work_dir = config_loader.get_base_paths().get("remote")
 file_name = 'tag_stats'
 
@@ -98,4 +98,4 @@ def viewer_main(config_loader, file_name=file_name):
     plot_pie_chart(tag_counts, 15, skip=2)   # skip since the top tags are useless
 
 if __name__ == "__main__":
-    viewer_main()
+    viewer_main(config_loader)

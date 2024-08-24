@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from utils.file_utils import ConfigLoader
-from src.logger import LogLevel, LogManager, logger
+from logger import LogLevel, LogManager, logger
 
 TEMP_NAME = ".logfile"
 
@@ -51,10 +51,9 @@ class FileSyncer:
 
     def _run_rsync(self, src: str, dst: str, log_path: str) -> None:
         command = [
-            'rsync', '-aq', '--ignore-existing', '--progress',
+            'rsync', '-aq', '--ignore-existing', '--remove-source-files', '--progress',
             f'--log-file={log_path}', f'{src}/', f'{dst}/'
         ]
-        print(command)
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         subprocess.run(command, check=True)
 

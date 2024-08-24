@@ -1,11 +1,12 @@
+
+# Todo: retriever.py + log, view.py
 import os
 from pathlib import Path
-import src.categorizer
-import src.retriever
-import src.synchronizer
-import src.viewer
+
+import categorizer, retriever, synchronizer, viewer
+from logger import LogLevel, LogManager
 from utils import file_utils, string_utils
-from src.logger import LogLevel, LogManager
+
 
 root = Path(__file__).resolve().parent.parent
 os.chdir(root)
@@ -19,7 +20,7 @@ def main():
     combined_paths = config_loader.get_combined_paths()
     
     logger.info("開始分類檔案...")
-    file_categorizer = src.categorizer.CategorizerUI(config_loader, logger)
+    file_categorizer = categorizer.CategorizerUI(config_loader, logger)
     file_categorizer.categorize() 
     # Or categorize specific category
     # categories = list(config_loader.get_categories())
@@ -28,19 +29,19 @@ def main():
 
     logger.info("開始同步檔案...")
     log_dir = root / Path("data")
-    file_syncer = src.synchronizer.FileSyncer(config_loader, log_dir, logger).sync_folders()
+    file_syncer = synchronizer.FileSyncer(config_loader, log_dir, logger).sync_folders()
     # Or sync specific category
-    # file_syncer = src.synchronizer.FileSyncer(config_loader, log_dir, logger)
+    # file_syncer = synchronizer.FileSyncer(config_loader, log_dir, logger)
     # file_syncer.sync_folders(combined_paths["IdolMaster"]["local_path"], combined_paths["IdolMaster"]["remote_path"])
-    # src.synchronizer.LogMerger(log_dir).merge_logs()
+    # synchronizer.LogMerger(log_dir).merge_logs()
     
     logger.info("開始尋找遺失作品...")
-    src.retriever.retrieve_artwork()
+    retriever.retrieve_artwork()
 
     logger.info("開始統計標籤...")
-    src.viewer.viewer_main(config_loader)
+    viewer.viewer_main(config_loader)
 
-    print(f"\033[32m這次新增了\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")
+    logger.info(f"這次新增了 {file_count} 個檔案🍺")
 
 if __name__ == "__main__":
     main()

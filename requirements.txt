@@ -1,5 +1,0 @@
-matplotlib
-urllib3<2
-bs4
-requests
-toml

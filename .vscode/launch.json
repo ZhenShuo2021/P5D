@@ -9,7 +9,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {
-                "PYTHONPATH": "${workspaceFolder}"
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "envFile": "${workspaceFolder}/.env"
         }

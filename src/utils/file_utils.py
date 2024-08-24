@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import toml
 
 from utils.string_utils import is_system, is_empty, split_tags
-from src.logger import LogLevel, LogManager, logger
+from logger import LogLevel, LogManager, logger
 log_manager = LogManager(level=LogLevel.INFO, status="file_utils.py")
 logger = log_manager.get_logger()
 
@@ -132,24 +132,22 @@ def generate_unique_path(path: Path) -> Path:
 
 def count_files(paths: Dict[str, Path], dir: str="remote_path") -> Dict[str, int]:
     file_count = 0
-
     for _, path in paths.items():
         path = Path(path[dir])
         if not path.is_dir():
             logger.error(f"FileNotFoundError: {path} does not exist or not a directory.")
-        logger.info(f"Counting number of files for {path}.")
-
         
         for file_path in path.rglob('*'):
             if file_path.is_file() and not is_system(file_path):
                 file_count += 1
 
+        logger.debug(f"Accumulate '{file_count}' files until '{path}'.")
     return file_count
 
 
 class ConfigLoader:
-    def __init__(self, config_path):
-        self.config_path = config_path
+    def __init__(self, config_path='config/config.toml'):
+        self.config_path = Path(__file__).parent.parent.parent / Path(config_path)
         self.load_config()
         self.combined_paths = self.combine_path()
 
@@ -195,13 +193,13 @@ class ConfigLoader:
 
 
 if __name__ == "__main__":
-    config_loader = ConfigLoader('config/config.toml')
+    config_loader = ConfigLoader()
     config_loader.load_config()
     tag_delimiters = config_loader.get_delimiters()
 
     combined_paths = config_loader.get_combined_paths()
     
     for category, paths in combined_paths.items():
-        print(f"{category} - Local: {paths['local']}, Remote: {paths['remote']}")
+        print(f"{category} - Local: {paths['local_path']}, Remote: {paths['remote_path']}")
 
     # safe_move(Path('struct.txt'), Path('structA.txt'))

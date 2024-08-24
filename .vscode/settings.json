@@ -5,9 +5,5 @@
         "pixiv",
         "tomlkit"
     ],
-    // "python.pythonPath": "path/to/your/python",  // 指定 Python 解釋器的路徑
-    // "python.autoComplete.extraPaths": [
-    //     "path/to/your/project"
-    // ],  // 添加額外的自動完成路徑
     "workspaceFolder": "/Users/leo/Documents/hugo/blog-script/batch-processing/pixiv"  // 設定工作區資料夾
 }
