@@ -73,7 +73,7 @@ class CategorizerFactory:
             categorizer_type = "custom"
         
         self.logger.debug(f"Processing category '{category}' with categorizer '{categorizer_type}'")
-        return preprocess, self.categorizers.get(categorizer_type)
+        return preprocess, self.categorizers.get(categorizer_type, None)
 
 
 class CategorizerUI:
