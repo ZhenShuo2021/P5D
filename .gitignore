@@ -1,5 +1,7 @@
 # Custom
 data/*
+!data/pixiv.html
+!data/pixiv_retrieve.txt
 .DS_Store
 activate
 
