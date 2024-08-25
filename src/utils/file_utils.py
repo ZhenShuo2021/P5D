@@ -1,5 +1,4 @@
 
-# Todo: get_tags in ConfigLoader
 import os
 import shutil
 from pathlib import Path
@@ -7,7 +6,8 @@ from typing import Any, Dict, List
 
 import toml
 
-from utils.string_utils import is_system, is_empty, split_tags
+from config import *
+from src.utils.string_utils import is_system, is_empty, split_tags
 from src.logger import LogLevel, LogManager, logger
 log_manager = LogManager(level=LogLevel.INFO, status="file_utils.py")
 logger = log_manager.get_logger()
@@ -202,6 +202,6 @@ if __name__ == "__main__":
     combined_paths = config_loader.get_combined_paths()
     
     for category, paths in combined_paths.items():
-        print(f"{category} - Local: {paths['local']}, Remote: {paths['remote']}")
+        print(f"{category} - Local: {paths['local_path']}, Remote: {paths['remote_path']}")
 
     # safe_move(Path('struct.txt'), Path('structA.txt'))

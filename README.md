@@ -11,7 +11,7 @@
 ## 安裝
 安裝好 [Python](https://liaoxuefeng.com/books/python/install/) 後安裝此腳本
 ```sh
-git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .venv && pip3 install -r requirements.txt
+git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .venv && source path/to/P5D/.venv/bin/activate && pip3 install -r requirements.txt
 ``` 
 
 使用 Powerful Pixiv Downloader 下載完成後執行 `main.py`  
