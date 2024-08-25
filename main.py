@@ -8,7 +8,7 @@ from src import viewer
 from src.utils import file_utils, string_utils
 from src.logger import LogLevel, LogManager
 
-root = Path(__file__).resolve().parent.parent
+root = Path(__file__).resolve().parent
 os.chdir(root)
 
 

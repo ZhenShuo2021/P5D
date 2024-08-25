@@ -16,7 +16,7 @@ git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .v
 
 使用 Powerful Pixiv Downloader 下載完成後執行 `main.py`  
 ```sh
-source path/to/P5D/.venv/bin/activate && python3 main.py
+source .venv/bin/activate && python3 main.py
 ```
 
 
