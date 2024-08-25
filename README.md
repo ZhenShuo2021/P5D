@@ -54,26 +54,27 @@ source .venv/bin/activate && python3 main.py
 
 ### 架構
 ```
-.
+./
+├── main.py                    # 入口程式
 ├── README.md
 ├── requirements.txt
 ├── config
-│   └── config.toml
-├── data
+│   └── config.toml            # 使用者定義設置
+├── data/
 │   ├── pixiv.log              # 系統日誌
 │   ├── pixiv.html             # 下載記錄，用於取回檔案
 │   ├── pixiv_retrieve.txt     # 檔案取回結果
 │   ├── rsync_log.log          # 同步日誌
 │   ├── tag_stats.jpg          # 標籤統計圓餅圖
 │   └── tag_stats.txt          # 標籤統計結果
-├── src
-│   ├── categorizer.py         # 檔案分類
-│   ├── logger.py              # 日誌
-│   ├── main.py                # 主程式
-│   ├── retriever.py           # 搜尋遺失作品
-│   ├── synchronizer.py        # 同步到遠端儲存裝置
-│   └── viewer.py              # 標籤統計
-└── utils
-    ├── file_utils.py          # 檔案移動工具
-    └── string_utils.py        # 字串檢查工具
+└── src/
+    ├── categorizer.py         # 檔案分類
+    ├── config.py              # 系統參數
+    ├── logger.py              # 系統日誌
+    ├── retriever.py           # 搜尋遺失作品
+    ├── synchronizer.py        # 同步到遠端儲存裝置
+    ├── viewer.py              # 標籤統計
+    └── utils/
+        ├── file_utils.py      # 檔案移動工具
+        └── string_utils.py    # 字串檢查工具
 ```
