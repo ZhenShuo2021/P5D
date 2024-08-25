@@ -1,12 +1,12 @@
+import sys
 from bs4 import BeautifulSoup
 import requests
-import sys
-import os
 import concurrent.futures
 import threading
 
+import config
+from logger import LogLevel, LogManager, logger
 from utils.string_utils import color_text
-from src.logger import LogLevel, LogManager, logger
 
 # Parameters
 base_url = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
@@ -23,7 +23,7 @@ def retrieve_artwork():
 
     found_posts, not_found_posts, take_down_posts = process_urls(base_url, urls)
     export_txt(f'./data/{html_file}_retrieve.txt', found_posts, not_found_posts, take_down_posts)
-    print(color_text(f"結果已輸出到 {os.getcwd()}/data/{html_file}_retrieve.txt", color='black'))
+    logger.debug(f"結果已輸出到 ./root/{html_file}_retrieve.txt")
 
 
 def print_progress(idx, total_urls, width=50):
@@ -110,4 +110,4 @@ def export_txt(filename, found_posts, not_found_posts, take_down_posts):
 
 
 if __name__ == "__main__":
-    retrieve_artwork(base_url, html_file)
+    retrieve_artwork()

@@ -1,6 +1,6 @@
 [BASE_PATHS]
 local_path = "/Users/leo/Pictures/downloads拷貝/"
-remote_path = "/Volumes/photo/download/test/"
+remote_path = "/Users/leo/Downloads/dst/"
 
 [categories.BlueArchive]
 local_path = "ブルーアーカイブ"

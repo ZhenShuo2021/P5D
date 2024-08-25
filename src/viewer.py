@@ -1,10 +1,9 @@
-# Extract tags for downloaded file. Use this to observe your file properties.
-# You can remove read_tag_counts and plot_pie_chart if you don't need it
-
 import os
-import re
 from collections import Counter
+
 import matplotlib.pyplot as plt
+
+import config
 from utils.file_utils import ConfigLoader
 from utils.string_utils import is_system, color_text, split_tags
 
@@ -98,4 +97,4 @@ def viewer_main(config_loader, file_name=file_name):
     plot_pie_chart(tag_counts, 15, skip=2)   # skip since the top tags are useless
 
 if __name__ == "__main__":
-    viewer_main()
+    viewer_main(config_loader)

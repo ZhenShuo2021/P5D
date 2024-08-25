@@ -5,8 +5,9 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+import config
 from utils.file_utils import ConfigLoader
-from src.logger import LogLevel, LogManager, logger
+from logger import LogLevel, LogManager, logger
 
 TEMP_NAME = ".logfile"
 
