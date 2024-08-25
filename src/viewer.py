@@ -3,9 +3,8 @@ from collections import Counter
 
 import matplotlib.pyplot as plt
 
-import config
-from utils.file_utils import ConfigLoader
-from utils.string_utils import is_system, color_text, split_tags
+from src.utils.file_utils import ConfigLoader
+from src.utils.string_utils import is_system, color_text, split_tags
 
 # Parameters
 # working_dir: 統計標籤的工作目錄

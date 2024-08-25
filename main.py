@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
 
-import config
-import categorizer
-import retriever
-import synchronizer
-import viewer
-from utils import file_utils, string_utils
+from src import categorizer
+from src import retriever
+from src import synchronizer
+from src import viewer
+from src.utils import file_utils, string_utils
 from src.logger import LogLevel, LogManager
 
 root = Path(__file__).resolve().parent.parent
@@ -17,7 +16,7 @@ def main():
     # Initialize
     log_manager = LogManager(level=LogLevel.DEBUG, status="main.py")
     logger = log_manager.get_logger()
-    config_loader = file_utils.ConfigLoader('config/config.toml')
+    config_loader = file_utils.ConfigLoader()
     combined_paths = config_loader.get_combined_paths()
     
     logger.info("開始分類檔案...")

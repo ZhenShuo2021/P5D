@@ -1,12 +1,11 @@
-import sys
+import os, sys
 from bs4 import BeautifulSoup
 import requests
 import concurrent.futures
 import threading
 
-import config
-from logger import LogLevel, LogManager, logger
-from utils.string_utils import color_text
+from src.logger import LogLevel, LogManager, logger
+from src.utils.string_utils import color_text
 
 # Parameters
 base_url = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
@@ -17,7 +16,9 @@ progress_idx = 0
 
 
 def retrieve_artwork():
-    html_content = read_html("./data/" + html_file + ".html")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, "../data", f"{html_file}.html")
+    html_content = read_html(file_path)
     urls = extract_urls(html_content)
     # print(f"遺失作品數量：{len(urls)}")
 

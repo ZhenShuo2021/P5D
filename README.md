@@ -16,7 +16,7 @@ git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .v
 
 使用 Powerful Pixiv Downloader 下載完成後執行 `main.py`  
 ```sh
-source path/to/P5D/.venv/bin/activate && python3 src/main.py
+source path/to/P5D/.venv/bin/activate && python3 main.py
 ```
 
 
@@ -33,6 +33,7 @@ source path/to/P5D/.venv/bin/activate && python3 src/main.py
 > 下載資料夾中未指定的子資料夾不會處理，但是檔案會全部被視為其他作品放進 others 資料夾。
 
 ## 進階設定
+進入資料夾後使用 `python3 -m src.xxx` 可獨立執行每個模組
 - 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。
 - 同步：`_run_rsync` 中修改 rsync 參數，參數可參考[這裡](https://ysc.goalsoft.com.tw/blog-detail.php?target=back&no=49)。
 - 搜尋：根據文件尋找 danbooru 是否有對應作品。 

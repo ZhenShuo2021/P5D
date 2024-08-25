@@ -148,8 +148,9 @@ def count_files(paths: Dict[str, Path], dir: str="remote_path") -> Dict[str, int
 
 
 class ConfigLoader:
-    def __init__(self, config_path):
-        self.config_path = config_path
+    def __init__(self, config_path='config/config.toml'):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config_path = os.path.join(base_dir, "../../", config_path)
         self.load_config()
         self.combined_paths = self.combine_path()
 
