@@ -11,11 +11,12 @@ os.chdir(root)
 
 def main():
     args = option.build_parser()
-
+    
     # Initialize
     log_manager = LogManager(level=args.loglevel, status="main.py")
     logger = log_manager.get_logger()
     config_loader = file_utils.ConfigLoader()
+    config_loader.load_config()
     combined_paths = config_loader.get_combined_paths()
 
     if not args.no_categorize:

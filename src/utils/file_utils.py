@@ -151,8 +151,7 @@ class ConfigLoader:
     def __init__(self, config_path='config/config.toml'):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_path = os.path.join(base_dir, "../../", config_path)
-        self.load_config()
-        self.combined_paths = self.combine_path()
+        self.combined_paths = None
 
     def load_config(self):
         try:
@@ -172,11 +171,13 @@ class ConfigLoader:
     def get_delimiters(self):
         return self.config.get('tag_delimiter', {})
     
-    def get_combined_paths(self):
-        return self.combined_paths
-    
     def get_file_type(self):
-        return self.file_type
+        return self.config.get('file_type', {})
+    
+    def get_combined_paths(self):
+        if self.combined_paths is None:
+            self.combined_paths = self.combine_path()
+        return self.combined_paths
 
     def combine_path(self):
         base_paths = self.get_base_paths()
