@@ -3,6 +3,7 @@ from collections import Counter
 
 import matplotlib.pyplot as plt
 
+from src.logger import LogLevel, LogManager
 from src.utils.file_utils import ConfigLoader
 from src.utils.string_utils import is_system, color_text, split_tags
 
@@ -12,6 +13,8 @@ from src.utils.string_utils import is_system, color_text, split_tags
 config_loader = ConfigLoader('config/config.toml')
 work_dir = config_loader.get_base_paths().get("remote")
 file_name = 'tag_stats'
+log_manager = LogManager(level=LogLevel.DEBUG, status="viewer.py")
+logger = log_manager.get_logger()
 
 # Functions
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
@@ -56,7 +59,7 @@ def plot_pie_chart(tag_counts, top_n=25, skip=2, output_file=file_name, dpi=360)
     plt.savefig(f'./data/{output_file}', dpi=dpi, format='jpg', bbox_inches='tight')
     plt.close()
 
-    print(f"圖表已輸出到{os.getcwd()}/data/{output_file}")
+    logger.info(f"圖表已輸出到{os.getcwd()}/data/{output_file}")
     
 # tag
 def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
@@ -85,7 +88,7 @@ def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
         for tag, count in sorted_tags:
             f.write(f"{tag}: {count}\n")
 
-    print(f"標籤已輸出到{os.getcwd()}/data/{output_file}.txt")
+    logger.info(f"標籤已輸出到{os.getcwd()}/data/{output_file}.txt")
 
 
 def viewer_main(config_loader, file_name=file_name):

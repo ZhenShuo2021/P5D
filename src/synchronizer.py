@@ -40,7 +40,7 @@ class FileSyncer:
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop.")
                 continue
             self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
-        log_merger = LogMerger(self.log_dir)
+        log_merger = LogMerger(self.log_dir, self.logger)
         log_merger.merge_logs()
 
     def _log_name(self, log_dir: Path, src: Path) -> str:
@@ -54,26 +54,26 @@ class FileSyncer:
             'rsync', '-aq', '--ignore-existing', '--progress',
             f'--log-file={log_path}', f'{src}/', f'{dst}/'
         ]
-        print(command)
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         subprocess.run(command, check=True)
 
 class LogMerger:
-    def __init__(self, log_dir: str):
+    def __init__(self, log_dir: str, logger: LogManager):
         self.log_dir = log_dir
+        self.logger = logger
 
     def merge_logs(self):
         output_file = f"{self.log_dir}/rsync_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
         log_files = [f for f in os.listdir(self.log_dir) if f.endswith(TEMP_NAME)]
 
         if not log_files:
-            print("No log files found in the directory.")
+            self.logger.debug("No log files found in the directory.")
             return
 
         merged_content = self._merge_log_files(log_files)
         with open(output_file, 'w', encoding='utf-8') as output:
             output.write(merged_content)
-        print(f"All logs have been merged into {output_file}")
+        self.logger.debug(f"All logs have been merged into {output_file}")
 
     def _merge_log_files(self, log_files: list) -> str:
         merged_content = ""
@@ -99,5 +99,5 @@ if __name__ == "__main__":
     for key in combined_paths:
         file_syncer.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
 
-    log_merger = LogMerger(log_dir)
+    log_merger = LogMerger(log_dir, logger)
     log_merger.merge_logs()

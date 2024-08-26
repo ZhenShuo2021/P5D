@@ -137,7 +137,7 @@ def count_files(paths: Dict[str, Path], dir: str="remote_path") -> Dict[str, int
         path = Path(path[dir])
         if not path.is_dir():
             logger.error(f"FileNotFoundError: {path} does not exist or not a directory.")
-        logger.info(f"Counting number of files for {path}.")
+        logger.debug(f"Counting number of files for {path}.")
 
         
         for file_path in path.rglob('*'):
