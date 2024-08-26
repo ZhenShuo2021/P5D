@@ -11,7 +11,6 @@ os.chdir(root)
 
 def main():
     args = option.build_parser()
-    print(args)
 
     # Initialize
     log_manager = LogManager(level=args.loglevel, status="main.py")
@@ -21,22 +20,28 @@ def main():
 
     if not args.no_categorize:
         logger.info("開始分類檔案...")
-        log_manager.set_status
+        log_manager.set_status("categorizer.py")
         file_categorizer = categorizer.CategorizerUI(config_loader, logger)
         file_categorizer.categorize()
         file_count = file_utils.count_files(combined_paths, "local_path")
 
     if not args.no_sync:
+        log_manager.set_status("main.py")
         logger.info("開始同步檔案...")
+        log_manager.set_status("synchronizer.py")
         log_dir = root / Path("data")
         file_syncer = synchronizer.FileSyncer(config_loader, log_dir, logger).sync_folders()
 
     if not args.no_retrieve:
+        log_manager.set_status("main.py")
         logger.info("開始尋找遺失作品...")
+        log_manager.set_status("retriever.py")
         retriever.retrieve_artwork()
 
     if not args.no_view:
+        log_manager.set_status("main.py")
         logger.info("開始統計標籤...")
+        log_manager.set_status("viewer.py")
         viewer.viewer_main(config_loader)
 
     if not args.no_categorize:

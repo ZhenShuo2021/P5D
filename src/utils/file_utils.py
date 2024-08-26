@@ -8,7 +8,7 @@ import toml
 
 from config import *
 from src.utils.string_utils import is_system, is_empty, split_tags
-from src.logger import LogLevel, LogManager, logger
+from src.logger import LogLevel, LogManager
 log_manager = LogManager(level=LogLevel.INFO, status="file_utils.py")
 logger = log_manager.get_logger()
 
@@ -76,7 +76,7 @@ def batch_move(parent_folder: Path, child_folders: List[str] = []) -> None:
                 else:
                     logger.debug(f"'{child_path}' is not empty; deleting process canceled.")
             else:
-                logger.debug(f"Child folder {child_path} not exist.")
+                logger.debug(f"Child folder '{child_path}' not exist.")
     
     elif isinstance(child_folders, Path) and child_folders.is_dir():
         safe_move_dir(base_folder, parent_folder)
@@ -136,8 +136,8 @@ def count_files(paths: Dict[str, Path], dir: str="remote_path") -> Dict[str, int
     for _, path in paths.items():
         path = Path(path[dir])
         if not path.is_dir():
-            logger.error(f"FileNotFoundError: {path} does not exist or not a directory.")
-        logger.debug(f"Counting number of files for {path}.")
+            logger.error(f"FileNotFoundError: '{path}' does not exist or not a directory.")
+        logger.debug(f"Counting number of files of '{path}'.")
 
         
         for file_path in path.rglob('*'):

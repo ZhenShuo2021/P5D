@@ -4,8 +4,11 @@ import requests
 import concurrent.futures
 import threading
 
-from src.logger import LogLevel, LogManager, logger
+from src.logger import LogLevel, LogManager
 from src.utils.string_utils import color_text
+
+log_manager = LogManager(level=LogLevel.DEBUG, status="retriever.py")
+logger = log_manager.get_logger()
 
 # Parameters
 base_url = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
@@ -23,8 +26,9 @@ def retrieve_artwork():
     # print(f"遺失作品數量：{len(urls)}")
 
     found_posts, not_found_posts, take_down_posts = process_urls(base_url, urls)
-    export_txt(f'./data/{html_file}_retrieve.txt', found_posts, not_found_posts, take_down_posts)
-    logger.debug(f"結果已輸出到 ./root/{html_file}_retrieve.txt")
+    output_path = f'./data/{html_file}_retrieve.txt'
+    export_txt(output_path, found_posts, not_found_posts, take_down_posts)
+    logger.debug(f"Retrieving result written to '{output_path}'")
 
 
 def print_progress(idx, total_urls, width=50):

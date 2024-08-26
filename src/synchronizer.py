@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.utils.file_utils import ConfigLoader
-from src.logger import LogLevel, LogManager, logger
+from src.logger import LogLevel, LogManager
 
 TEMP_NAME = ".logfile"
 
@@ -73,7 +73,7 @@ class LogMerger:
         merged_content = self._merge_log_files(log_files)
         with open(output_file, 'w', encoding='utf-8') as output:
             output.write(merged_content)
-        self.logger.debug(f"All logs have been merged into {output_file}")
+        self.logger.debug(f"All logs have been merged into '{output_file}'")
 
     def _merge_log_files(self, log_files: list) -> str:
         merged_content = ""

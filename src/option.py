@@ -26,5 +26,6 @@ def build_parser():
     parser.add_argument('--no-view', action='store_true', help='關閉統計標籤功能')
     parser.add_argument('-q', '--quiet', dest="loglevel", action="store_const", const=LogLevel.ERROR, help="安靜模式")
     parser.add_argument('-v', '--verbose', dest="loglevel", action="store_const", const=LogLevel.DEBUG, help="偵錯模式")
+    parser.set_defaults(loglevel=LogLevel.INFO)
 
     return parser.parse_args()

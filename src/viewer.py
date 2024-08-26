@@ -59,7 +59,7 @@ def plot_pie_chart(tag_counts, top_n=25, skip=2, output_file=file_name, dpi=360)
     plt.savefig(f'./data/{output_file}', dpi=dpi, format='jpg', bbox_inches='tight')
     plt.close()
 
-    logger.info(f"圖表已輸出到{os.getcwd()}/data/{output_file}")
+    logger.info(f"Pie plot written to '{os.getcwd()}/data/{output_file}'")
     
 # tag
 def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
@@ -88,7 +88,7 @@ def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
         for tag, count in sorted_tags:
             f.write(f"{tag}: {count}\n")
 
-    logger.info(f"標籤已輸出到{os.getcwd()}/data/{output_file}.txt")
+    logger.info(f"Tag statistics written to '{os.getcwd()}/data/{output_file}.txt'")
 
 
 def viewer_main(config_loader, file_name=file_name):
