@@ -1,5 +1,6 @@
 # Custom
 data/*
+*temp*
 !data/pixiv.html
 !data/pixiv_retrieve.txt
 .DS_Store
