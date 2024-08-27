@@ -151,6 +151,7 @@ class ConfigLoader:
     def __init__(self, config_path='config/config.toml'):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_path = os.path.join(base_dir, "../../", config_path)
+        self.config = None
         self.combined_paths = None
 
     def load_config(self):

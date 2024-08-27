@@ -89,7 +89,8 @@ if __name__ == "__main__":
     log_manager = LogManager(level=LogLevel.DEBUG, status="synchronizer.py")
     logger = log_manager.get_logger()
 
-    config_loader = ConfigLoader('config/config.toml')
+    config_loader = ConfigLoader()
+    config_loader.load_config()
     combined_paths = config_loader.get_combined_paths()
     
     script_dir = Path(os.path.dirname(os.path.abspath(__file__)))

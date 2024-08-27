@@ -1,5 +1,5 @@
-# Pixiv 後處理腳本
-[Powerful Pixiv Downloader](https://github.com/xuejianxianzun/PixivBatchDownloader) 下載後的檔案處理腳本。  
+# P5D - Pixiv Post Processor of Powerful Pixiv Downloader
+[Powerful Pixiv Downloader](https://github.com/xuejianxianzun/PixivBatchDownloader) 的後處理腳本。  
 後處理 Powerful Pixiv Downloader 標籤，把依照作品分類的檔案再細分成各個角色，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
 
 ## 功能

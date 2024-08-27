@@ -79,14 +79,14 @@ class CategorizerFactory:
 class CategorizerUI:
     def __init__(self, config_loader: ConfigLoader, logger: LogManager, factory: CategorizerFactory=None):
         """ UI for categorizing files. """
-        self.logger = logger
-        base_path = config_loader.get_base_paths()
-        base_path_local = base_path.get("local_path")
+        self.logger = logger        
+        self.config_loader = config_loader
+        self.config_loader.load_config()
+        base_path_local = config_loader.get_base_paths().get("local_path")
         if not Path(base_path_local).exists():
             self.logger.error(f"Base path '{base_path_local}' does not exist.")
             raise FileNotFoundError(f"Base path '{base_path_local}' does not exist.")
         
-        self.config_loader = config_loader
         self.combined_paths = config_loader.get_combined_paths()
         self.categories = config_loader.get_categories()
         self.factory = factory or CategorizerFactory(config_loader, logger)
