@@ -81,7 +81,8 @@ class CategorizerUI:
         """ UI for categorizing files. """
         self.logger = logger        
         self.config_loader = config_loader
-        self.config_loader.load_config()
+        if self.config_loader.config is None:
+            self.config_loader.load_config()
         base_path_local = config_loader.get_base_paths().get("local_path")
         if not Path(base_path_local).exists():
             self.logger.error(f"Base path '{base_path_local}' does not exist.")

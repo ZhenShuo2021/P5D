@@ -1,7 +1,8 @@
 import logging
 import os
 from enum import Enum
-LOG_FORMAT = "[%(asctime)s][%(levelname)s][%(status)s] - %(message)s"
+# LOG_FORMAT = "[%(asctime)s][%(levelname)s][%(status)s] - %(message)s"
+LOG_FORMAT = "[%(asctime)s][%(levelname)s] - %(message)s"
 DATE_FORMAT = "%H:%M:%S"
 
 
@@ -27,9 +28,11 @@ class CustomFormatter(logging.Formatter):
     def format(self, record):
         color = self.COLORS.get(record.levelno, self.RESET)
         levelname = record.levelname.lower()
+        # return f"[{self.GREEN}{self.formatTime(record, DATE_FORMAT)}{self.RESET}]" \
+        #     f"[{color}{levelname}{self.RESET}]" \
+        #     f"[{record.status}] - {record.getMessage()}"
         return f"[{self.GREEN}{self.formatTime(record, DATE_FORMAT)}{self.RESET}]" \
-            f"[{color}{levelname}{self.RESET}]" \
-            f"[{record.status}] - {record.getMessage()}"
+            f"[{color}{levelname}{self.RESET}] - {record.getMessage()}"
 
 
 class PlainFormatter(logging.Formatter):

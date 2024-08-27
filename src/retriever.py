@@ -7,7 +7,7 @@ import threading
 from src.logger import LogLevel, LogManager
 from src.utils.string_utils import color_text
 
-log_manager = LogManager(level=LogLevel.DEBUG, status="retriever.py")
+log_manager = LogManager(level=LogLevel.DEBUG)
 logger = log_manager.get_logger()
 
 # Parameters

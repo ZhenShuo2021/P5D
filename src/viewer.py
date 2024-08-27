@@ -11,7 +11,7 @@ from src.utils.string_utils import is_system, color_text, split_tags
 # working_dir: 統計標籤的工作目錄
 # file_name: 輸出標籤和圖表的檔案名稱
 file_name = 'tag_stats'
-log_manager = LogManager(level=LogLevel.DEBUG, status="viewer.py")
+log_manager = LogManager(level=LogLevel.DEBUG)
 logger = log_manager.get_logger()
 
 # Functions

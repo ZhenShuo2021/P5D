@@ -86,7 +86,7 @@ class LogMerger:
         return merged_content
 
 if __name__ == "__main__":
-    log_manager = LogManager(level=LogLevel.DEBUG, status="synchronizer.py")
+    log_manager = LogManager(level=LogLevel.DEBUG)
     logger = log_manager.get_logger()
 
     config_loader = ConfigLoader()
