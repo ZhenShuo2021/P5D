@@ -88,7 +88,7 @@ class LogMerger:
         return merged_content
 
 if __name__ == "__main__":
-    custom_logger.setup_logging()
+    custom_logger.setup_logging(logging.DEBUG)
 
     config_loader = ConfigLoader()
     config_loader.load_config()

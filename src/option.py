@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 
 class Formatter(argparse.HelpFormatter):
@@ -24,7 +25,9 @@ def build_parser():
     parser.add_argument('--no-sync', action='store_true', help='關閉同步功能')
     parser.add_argument('--no-retrieve', action='store_true', help='關閉尋找遺失作品功能')
     parser.add_argument('--no-view', action='store_true', help='關閉統計標籤功能')
-
+    parser.add_argument('-q', '--quiet', dest="loglevel", action="store_const", const=logging.ERROR, help="安靜模式")
+    parser.add_argument('-v', '--verbose', dest="loglevel", action="store_const", const=logging.DEBUG, help="偵錯模式")
+    parser.set_defaults(loglevel=logging.INFO)
     return parser.parse_args()
 
 

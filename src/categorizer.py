@@ -193,7 +193,7 @@ class CustomCategorizer(CategorizerInterface):
 
 
 def main():
-    custom_logger.setup_logging()
+    custom_logger.setup_logging(logging.DEBUG)
 
     config_loader = ConfigLoader()
 

@@ -91,7 +91,8 @@ def process_urls(
         for future in concurrent.futures.as_completed(futures):
             no_posts_found, take_down, found = future.result()
 
-            update_progress()
+            if logger.getEffectiveLevel() > logging.DEBUG:
+                update_progress()
             if no_posts_found:
                 not_found_posts.append(f"# {no_posts_found} No posts found")
             if take_down:
@@ -121,6 +122,6 @@ def export_txt(
 
 
 if __name__ == "__main__":
-    custom_logger.setup_logging()
+    custom_logger.setup_logging(logging.DEBUG)
     
     retrieve_artwork()

@@ -109,7 +109,7 @@ def viewer_main(config_loader: ConfigLoader, file_name: str=STATS_FILE):
     plot_pie_chart(tag_counts, 15, skip=2)   # skip since the top tags are useless
 
 if __name__ == "__main__":
-    custom_logger.setup_logging()
+    custom_logger.setup_logging(logging.DEBUG)
     config_loader = ConfigLoader()
     config_loader.load_config()
     viewer_main(config_loader)

@@ -13,7 +13,7 @@ def main():
     args = option.build_parser()
     
     # Initialize
-    setup_logging()
+    setup_logging(args.loglevel)
     import logging
     logger = logging.getLogger("P5D")
     config_loader = file_utils.ConfigLoader()

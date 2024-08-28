@@ -31,7 +31,7 @@ class CustomFormatter(logging.Formatter):
             return f"[{self.formatTime(record, '%H:%M:%S')}][{levelname}] - {record.getMessage()}"
 
 
-def setup_logging():
+def setup_logging(level):
     # Clear any existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
@@ -53,11 +53,11 @@ def setup_logging():
     logging.getLogger().addHandler(console_handler)
     logging.getLogger().addHandler(file_handler)
     logging.getLogger().setLevel(logging.DEBUG)
-
+    logging.getLogger().setLevel(level)
 
 if __name__ == "__main__":
     # Set up logging
-    setup_logging()
+    setup_logging(logging.DEBUG)
 
     # Create a logger
     logger = logging.getLogger(__name__)
