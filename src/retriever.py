@@ -5,15 +5,12 @@ import requests
 import concurrent.futures
 import threading
 
+from src import config
 from src.logger import LogLevel, LogManager
 from src.utils.string_utils import color_text
 
 log_manager = LogManager(level=LogLevel.DEBUG)
 logger = log_manager.get_logger()
-
-# Parameters
-base_url = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
-html_file = "pixiv"
 
 progress_lock = threading.Lock()
 progress_idx = 0
@@ -21,13 +18,13 @@ progress_idx = 0
 
 def retrieve_artwork() -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, "../data", f"{html_file}.html")
+    file_path = os.path.join(base_dir, "../", config.OUTPUT_DIR, f"{config.MISS_LOG}.html")
     html_content = read_html(file_path)
     urls = extract_urls(html_content)
     # print(f"遺失作品數量：{len(urls)}")
 
-    found_posts, not_found_posts, take_down_posts = process_urls(base_url, urls)
-    output_path = f'./data/{html_file}_retrieve.txt'
+    found_posts, not_found_posts, take_down_posts = process_urls(config.SOURCE_URL, urls)
+    output_path = f'./{config.OUTPUT_DIR}/{config.MISS_LOG}_retrieve.txt'
     export_txt(output_path, found_posts, not_found_posts, take_down_posts)
     logger.debug(f"Retrieving result written to '{output_path}'")
 

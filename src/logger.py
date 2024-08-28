@@ -1,6 +1,9 @@
 import logging
 import os
+import src.config
 from enum import Enum
+
+import src.logger
 # LOG_FORMAT = "[%(asctime)s][%(levelname)s][%(status)s] - %(message)s"
 LOG_FORMAT = "[%(asctime)s][%(levelname)s] - %(message)s"
 DATE_FORMAT = "%H:%M:%S"
@@ -59,8 +62,8 @@ class LogManager:
         logger.addHandler(ch)
 
         # File handler
-        os.makedirs('./data', exist_ok=True)
-        fh = logging.FileHandler('data/system.log')
+        os.makedirs('./' + src.config.OUTPUT_DIR, exist_ok=True)
+        fh = logging.FileHandler(src.config.OUTPUT_DIR + '/system.log')
         fh.setLevel(level)
         fh.setFormatter(PlainFormatter())
         logger.addHandler(fh)

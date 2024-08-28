@@ -5,10 +5,9 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from src import config
 from src.utils.file_utils import ConfigLoader
 from src.logger import LogLevel, LogManager
-
-TEMP_NAME = ".logfile"
 
 
 class FileSyncer:
@@ -48,7 +47,7 @@ class FileSyncer:
         if not log_dir.is_dir():
             log_dir.mkdir(parents=True, exist_ok=True)
             self.logger.debug(f"Creates folder '{log_dir}'")
-        return os.path.join(str(log_dir), f'{os.path.basename(src)}{TEMP_NAME}')
+        return os.path.join(str(log_dir), f'{os.path.basename(src)}{config.LOG_TEMP_EXT}')
 
     def _run_rsync(self, src: str, dst: str, log_path: str) -> None:
         command = [
@@ -65,7 +64,7 @@ class LogMerger:
 
     def merge_logs(self) -> None:
         output_file = f"{self.log_dir}/rsync_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
-        log_files = [f for f in os.listdir(self.log_dir) if f.endswith(TEMP_NAME)]
+        log_files = [f for f in os.listdir(self.log_dir) if f.endswith(config.LOG_TEMP_EXT)]
 
         if not log_files:
             self.logger.debug("No log files found in the directory.")
@@ -95,7 +94,7 @@ if __name__ == "__main__":
     combined_paths = config_loader.get_combined_paths()
     
     script_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-    log_dir = script_dir.parent / Path("data")
+    log_dir = script_dir.parent / Path(config.OUTPUT_DIR)
     file_syncer = FileSyncer(config_loader, log_dir, logger)
 
     for key in combined_paths:
