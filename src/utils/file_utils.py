@@ -2,7 +2,6 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
 
 import toml
 
@@ -52,7 +51,7 @@ def safe_move_dir(src_folder: Path, dst_folder: Path) -> None:
             safe_move(file_path, dst_folder / file_path.name)
 
 
-def batch_move(parent_folder: Path, child_folders: List[str] = []) -> None:
+def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
     """Move all files in "child_folders" to "parent_folder". 
 
     By default, the child and the parent folders are in the same level:
@@ -82,7 +81,13 @@ def batch_move(parent_folder: Path, child_folders: List[str] = []) -> None:
         safe_move_dir(base_folder, parent_folder)
 
 
-def move_tagged(base_path: Path, other_path: Path, file_path: Path, file_tags: List[str], tags: Dict[str, str]) -> None:
+def move_tagged(
+        base_path: Path, 
+        other_path: Path, 
+        file_path: Path, 
+        file_tags: list[str], 
+        tags: dict[str, str]
+        ) -> None:
     """Move tagged file for a single file. Search the first file tag in tags and move it to target_folder.
 
     base_path: File destination. In configuration: BASE_PATHS / CATEGORIES.BlueArchive.remote
@@ -98,7 +103,11 @@ def move_tagged(base_path: Path, other_path: Path, file_path: Path, file_tags: L
         safe_move(file_path, other_path / file_path.name)
 
 
-def get_tagged_path(base_path: Path, file_tags: List[str], tags: Dict[str, str]) -> Path:
+def get_tagged_path(
+        base_path: Path, 
+        file_tags: list[str], 
+        tags: dict[str, str]
+        ) -> Path:
     """ Return the target folder path based on the file tags. """
     for tag in file_tags:
         if tag in tags:
@@ -107,7 +116,12 @@ def get_tagged_path(base_path: Path, file_tags: List[str], tags: Dict[str, str])
             return target_folder
     return None
 
-def move_all_tagged(base_path: Path, other_path: Path, tags: Dict[str, str], tag_delimiter: dict) -> None:
+def move_all_tagged(
+        base_path: Path, 
+        other_path: Path, 
+        tags: dict[str, str], 
+        tag_delimiter: dict
+        ) -> None:
     """Move tagged file for all files."""
     for file_path in base_path.rglob('*'):
         if file_path.is_file() and not is_system(file_path.name):
@@ -130,7 +144,7 @@ def generate_unique_path(path: Path) -> Path:
     return new_path
 
 
-def count_files(paths: Dict[str, Path], dir: str="remote_path") -> Dict[str, int]:
+def count_files(paths: dict[str, Path], dir: str="remote_path") -> dict[str, int]:
     file_count = 0
 
     for _, path in paths.items():
@@ -198,7 +212,7 @@ class ConfigLoader:
 
 
 if __name__ == "__main__":
-    config_loader = ConfigLoader('config/config.toml')
+    config_loader = ConfigLoader()
     config_loader.load_config()
     tag_delimiters = config_loader.get_delimiters()
 

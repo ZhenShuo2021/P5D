@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from bs4 import BeautifulSoup
 import requests
 import concurrent.futures
@@ -18,7 +19,7 @@ progress_lock = threading.Lock()
 progress_idx = 0
 
 
-def retrieve_artwork():
+def retrieve_artwork() -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(base_dir, "../data", f"{html_file}.html")
     html_content = read_html(file_path)
@@ -31,7 +32,7 @@ def retrieve_artwork():
     logger.debug(f"Retrieving result written to '{output_path}'")
 
 
-def print_progress(idx, total_urls, width=50):
+def print_progress(idx: int, total_urls: int, width: int = 50) -> None:
     sys.stdout.write('\r' + ' ' * (width + 20) + '\r')
     progress = (idx + 1) / total_urls
     filled_length = int(width * progress)
@@ -41,18 +42,18 @@ def print_progress(idx, total_urls, width=50):
     sys.stdout.flush()
 
 
-def read_html(filename):
+def read_html(filename: str) -> str:
     with open(filename, 'r', encoding='utf-8') as file:
         return file.read()
 
 
-def extract_urls(html_content):
+def extract_urls(html_content: str) -> list[str]:
     soup = BeautifulSoup(html_content, 'html.parser')
     href_tags = soup.find_all(href=True)
     return [tag['href'].rsplit('/', 1)[-1] for tag in href_tags]
 
 
-def fetch_url(base_url, url_suffix):
+def fetch_url(base_url: str, url_suffix: str) -> tuple[str | None, str | None, str | None]:
     search_url = base_url.format(url_suffix)
     try:
         response = requests.get(search_url)
@@ -73,7 +74,11 @@ def fetch_url(base_url, url_suffix):
         return None, None, None
 
 
-def process_urls(base_url, urls, max_threads=5):
+def process_urls(
+        base_url: str,
+        urls: str, 
+        max_threads: int = 5
+        ) -> tuple[list[str], list[str], list[str]]:
     found_posts = []
     not_found_posts = []
     take_down_posts = []
@@ -104,7 +109,12 @@ def process_urls(base_url, urls, max_threads=5):
     return found_posts, not_found_posts, take_down_posts
 
 
-def export_txt(filename, found_posts, not_found_posts, take_down_posts):
+def export_txt(
+        filename: str, 
+        found_posts: list[str], 
+        not_found_posts: list[str], 
+        take_down_posts: list[str]
+        ) -> None:
     with open(filename, 'w', encoding='utf-8') as file:
         for result in found_posts:
             file.write(result + '\n')

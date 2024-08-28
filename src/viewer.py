@@ -18,7 +18,7 @@ logger = log_manager.get_logger()
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
-def read_tag_counts(file_name):
+def read_tag_counts(file_name: str) -> Counter[str, int]:
     file_name = "./data/" + file_name + ".txt"
     tag_counts = Counter()
     with open(file_name, 'r') as file:
@@ -27,7 +27,13 @@ def read_tag_counts(file_name):
             tag_counts[tag] = int(count)
     return tag_counts
 
-def plot_pie_chart(tag_counts, top_n=25, skip=2, output_file=file_name, dpi=360):
+def plot_pie_chart(
+        tag_counts: int, 
+        top_n: int=25, 
+        skip: int=2, 
+        output_file: str=file_name, 
+        dpi: int=360
+        ) -> None:
     output_file = output_file + ".jpg"
     keywords_to_skip = ['users', 'ブルアカ', 'BlueArchive']
     exact_match_to_skip = '閃耀色彩'
@@ -60,7 +66,12 @@ def plot_pie_chart(tag_counts, top_n=25, skip=2, output_file=file_name, dpi=360)
     logger.info(f"Pie plot written to '{os.getcwd()}/data/{output_file}'")
     
 # tag
-def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
+def count_tags(
+        directory: str, 
+        tag_delimiter: dict[str, str], 
+        recursive: bool=True, 
+        output_file: str='tags'
+        ) -> None:
     all_tags = []
     total_files = 0
 
@@ -89,7 +100,7 @@ def count_tags(directory, tag_delimiter, recursive=True, output_file='tags'):
     logger.info(f"Tag statistics written to '{os.getcwd()}/data/{output_file}.txt'")
 
 
-def viewer_main(config_loader, file_name=file_name):
+def viewer_main(config_loader: ConfigLoader, file_name: str=file_name):
     base_path = config_loader.get_base_paths()
     tag_delimiter = config_loader.get_delimiters()
     count_tags(base_path["local_path"], tag_delimiter, output_file=file_name)

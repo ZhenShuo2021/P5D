@@ -32,9 +32,10 @@ class FileSyncer:
             log_path = self._log_name(self.log_dir, src)
             self._run_rsync(src, dst, log_path)
 
-    def sync_folders_all(self):
+    def sync_folders_all(self) -> None:
         combined_paths = self.config_loader.get_combined_paths()
         for key in combined_paths:
+            # Not using get method to prevent infinite loop
             if not combined_paths[key]["local_path"]:
                 self.logger.critical(
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop.")
@@ -62,7 +63,7 @@ class LogMerger:
         self.log_dir = log_dir
         self.logger = logger
 
-    def merge_logs(self):
+    def merge_logs(self) -> None:
         output_file = f"{self.log_dir}/rsync_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
         log_files = [f for f in os.listdir(self.log_dir) if f.endswith(TEMP_NAME)]
 

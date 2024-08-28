@@ -6,7 +6,6 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Tuple, Dict, Optional
 
 from src.logger import LogLevel, LogManager
 from src.utils.file_utils import ConfigLoader, safe_move, batch_move, move_all_tagged
@@ -39,12 +38,12 @@ class CategorizerInterface(ABC):
         pass
 
     @abstractmethod
-    def prepare_folders(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
         """ Preprocessing for folders. For example, create an 'other' folder. """
         pass
 
     @abstractmethod
-    def categorize_helper(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
         """ Helper function for categorize. """
         pass
 
@@ -60,7 +59,7 @@ class CategorizerFactory:
             "custom": CustomCategorizer(config_loader, logger)
         }
 
-    def get_categorizer(self, category: str, categories: Dict[str, str]) -> Tuple[bool, Optional[CategorizerInterface]]:
+    def get_categorizer(self, category: str, categories: dict[str, str]) -> tuple[bool, CategorizerInterface | None]:
         # Dynamically choose the categorizer base on the key existence.
         preprocess = "children" in categories.get(category, {}) or category == "Others"
         if "children" in categories[category] or "tags" in categories[category]:
@@ -122,11 +121,11 @@ class SeriesCategorizer(CategorizerInterface):
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
 
-    def prepare_folders(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
         self.other_path = base_path / tags.get(self.others_name, "others")
         self.other_path.mkdir(parents=True, exist_ok=True)
 
-    def categorize_helper(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
         move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter)
 
 
@@ -153,7 +152,7 @@ class OthersCategorizer(CategorizerInterface):
             self.prepare_folders(base_path, tags)
             self.categorize_helper(base_path, tags)
  
-    def prepare_folders(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
         self.folders = {
             "EN": base_path / self.EN,
             "JP": base_path / self.JP,
@@ -164,7 +163,7 @@ class OthersCategorizer(CategorizerInterface):
                 folder.mkdir(parents=True, exist_ok=True)
                 self.logger.debug(f"Creates folder '{folder}'")
 
-    def categorize_helper(self, base_path: Path, tags: Dict[str, str] | None=None) -> None:
+    def categorize_helper(self, base_path: Path, tags: dict[str, str] | None=None) -> None:
         for file_path in base_path.parent.iterdir():
             if file_path.is_file() and not is_system(file_path.name):
                 first_char = file_path.name[0]
@@ -181,10 +180,10 @@ class CustomCategorizer(CategorizerInterface):
     def categorize(self, category: str, preprocess: bool) -> None:
         pass
     
-    def prepare_folders(self, base_path: Path, tags: Dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
         pass
 
-    def categorize_helper(self, base_path: Path, other_path:Path, tags: Dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, other_path:Path, tags: dict[str, str]) -> None:
         pass
 
     def _helper_function(self) -> None:

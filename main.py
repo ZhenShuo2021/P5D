@@ -30,7 +30,7 @@ def main():
     if not args.no_sync:
         logger.info("開始同步檔案...")
         log_dir = root / Path("data")
-        file_syncer = synchronizer.FileSyncer(config_loader, log_dir, logger).sync_folders()
+        synchronizer.FileSyncer(config_loader, log_dir, logger).sync_folders()
 
     if not args.no_retrieve:
         logger.info("開始尋找遺失作品...")
