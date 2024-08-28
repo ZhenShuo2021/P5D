@@ -1,15 +1,15 @@
 
 import os
 import shutil
+import logging
 from pathlib import Path
 
 import toml
 
 from config import *
 from src.utils.string_utils import is_system, is_empty, split_tags
-from src.logger import LogLevel, LogManager
-log_manager = LogManager(level=LogLevel.INFO, status="file_utils.py")
-logger = log_manager.get_logger()
+
+logger = logging.getLogger(__name__)
 
 
 def safe_move(src: str | Path, dst: str | Path) -> None:

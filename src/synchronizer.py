@@ -1,17 +1,19 @@
 
 # Todo: Logging if remote path exists.
 import os
+import logging
 import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from src import config
+from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader
-from src.logger import LogLevel, LogManager
+
+logger = logging.getLogger(__name__)
 
 
 class FileSyncer:
-    def __init__(self, config_loader: ConfigLoader, log_dir: Path, logger: LogManager):
+    def __init__(self, config_loader: ConfigLoader, log_dir: Path):
         self.logger = logger
         self.log_dir = log_dir
         self.config_loader = config_loader
@@ -40,7 +42,7 @@ class FileSyncer:
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop.")
                 continue
             self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
-        log_merger = LogMerger(self.log_dir, self.logger)
+        log_merger = LogMerger(self.log_dir)
         log_merger.merge_logs()
 
     def _log_name(self, log_dir: Path, src: Path) -> str:
@@ -58,7 +60,7 @@ class FileSyncer:
         subprocess.run(command, check=True)
 
 class LogMerger:
-    def __init__(self, log_dir: str, logger: LogManager):
+    def __init__(self, log_dir: str):
         self.log_dir = log_dir
         self.logger = logger
 
@@ -86,8 +88,7 @@ class LogMerger:
         return merged_content
 
 if __name__ == "__main__":
-    log_manager = LogManager(level=LogLevel.DEBUG)
-    logger = log_manager.get_logger()
+    custom_logger.setup_logging()
 
     config_loader = ConfigLoader()
     config_loader.load_config()
@@ -95,10 +96,10 @@ if __name__ == "__main__":
     
     script_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     log_dir = script_dir.parent / Path(config.OUTPUT_DIR)
-    file_syncer = FileSyncer(config_loader, log_dir, logger)
+    file_syncer = FileSyncer(config_loader, log_dir)
 
     for key in combined_paths:
         file_syncer.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
 
-    log_merger = LogMerger(log_dir, logger)
+    log_merger = LogMerger(log_dir)
     log_merger.merge_logs()

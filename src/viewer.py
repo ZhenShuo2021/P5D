@@ -1,16 +1,20 @@
 import os
+import logging
 from collections import Counter
 
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-from src import config
-from src.logger import LogLevel, LogManager
+from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader
 from src.utils.string_utils import is_system, color_text, split_tags
 from src.config import STATS_FILE, WORK_DIR
 
-log_manager = LogManager(level=LogLevel.DEBUG)
-logger = log_manager.get_logger()
+logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
+logging.getLogger('matplotlib.font_manager').setLevel(logging.CRITICAL)
+logging.getLogger('matplotlib.backends').setLevel(logging.CRITICAL)
+logger = logging.getLogger(__name__)
 
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
@@ -60,7 +64,7 @@ def plot_pie_chart(
     plt.savefig(f'./{config.OUTPUT_DIR}/{output_file}', dpi=dpi, format='jpg', bbox_inches='tight')
     plt.close()
 
-    logger.info(f"Pie plot written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}'")
+    logger.debug(f"Pie plot written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}'")
     
 # tag
 def count_tags(
@@ -94,7 +98,7 @@ def count_tags(
         for tag, count in sorted_tags:
             f.write(f"{tag}: {count}\n")
 
-    logger.info(f"Tag statistics written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}.txt'")
+    logger.debug(f"Tag statistics written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}.txt'")
 
 
 def viewer_main(config_loader: ConfigLoader, file_name: str=STATS_FILE):
@@ -105,6 +109,7 @@ def viewer_main(config_loader: ConfigLoader, file_name: str=STATS_FILE):
     plot_pie_chart(tag_counts, 15, skip=2)   # skip since the top tags are useless
 
 if __name__ == "__main__":
+    custom_logger.setup_logging()
     config_loader = ConfigLoader()
     config_loader.load_config()
     viewer_main(config_loader)

@@ -3,21 +3,22 @@
 
 # Todo: glob file type to conf.py
 # Todo: IPTC/EXIF writer
-
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from src import config
-from src.logger import LogLevel, LogManager
+from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader, safe_move, batch_move, move_all_tagged
 from src.utils.string_utils import is_system, is_english, is_japanese
+
+logger = logging.getLogger(__name__)
 
 
 # Do NOT change unless necessary
 class CategorizerInterface(ABC):
     OTHERS_NAME = config.OTHERS_NAME
 
-    def __init__(self, config_loader: ConfigLoader, logger: LogManager):
+    def __init__(self, config_loader: ConfigLoader):
         """Abstract base class for categorizers.
 
         Args:
@@ -47,14 +48,14 @@ class CategorizerInterface(ABC):
 
 
 class CategorizerFactory:
-    def __init__(self, config_loader: ConfigLoader, logger: LogManager):
+    def __init__(self, config_loader: ConfigLoader):
         """ Factory for choosing and instantiate categorizers. """
         self.config_loader = config_loader
         self.logger = logger
         self.categorizers = {
-            "series": SeriesCategorizer(config_loader, logger),
-            "others": OthersCategorizer(config_loader, logger),
-            "custom": CustomCategorizer(config_loader, logger)
+            "series": SeriesCategorizer(config_loader),
+            "others": OthersCategorizer(config_loader),
+            "custom": CustomCategorizer(config_loader)
         }
 
     def get_categorizer(self, category: str, categories: dict[str, str]) -> tuple[bool, CategorizerInterface | None]:
@@ -74,7 +75,7 @@ class CategorizerFactory:
 
 
 class CategorizerUI:
-    def __init__(self, config_loader: ConfigLoader, logger: LogManager, factory: CategorizerFactory = None):
+    def __init__(self, config_loader: ConfigLoader, factory: CategorizerFactory = None):
         """ UI for categorizing files. """
         self.logger = logger
         self.config_loader = config_loader
@@ -87,7 +88,7 @@ class CategorizerUI:
 
         self.combined_paths = config_loader.get_combined_paths()
         self.categories = config_loader.get_categories()
-        self.factory = factory or CategorizerFactory(config_loader, logger)
+        self.factory = factory or CategorizerFactory(config_loader)
 
     def categorize(self, category: str = "") -> None:
         if not category:
@@ -192,13 +193,12 @@ class CustomCategorizer(CategorizerInterface):
 
 
 def main():
-    log_manager = LogManager(level=LogLevel.DEBUG)
-    logger = log_manager.get_logger()
+    custom_logger.setup_logging()
 
     config_loader = ConfigLoader()
 
     # Initialize categorizer
-    file_categorizer = CategorizerUI(config_loader, logger)
+    file_categorizer = CategorizerUI(config_loader)
 
     # Start categorizing all categories
     file_categorizer.categorize()

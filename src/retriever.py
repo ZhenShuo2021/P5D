@@ -1,16 +1,15 @@
 import os
 import sys
+import logging
 from bs4 import BeautifulSoup
 import requests
 import concurrent.futures
 import threading
 
-from src import config
-from src.logger import LogLevel, LogManager
+from src import config, custom_logger
 from src.utils.string_utils import color_text
 
-log_manager = LogManager(level=LogLevel.DEBUG)
-logger = log_manager.get_logger()
+logger = logging.getLogger(__name__)
 
 progress_lock = threading.Lock()
 progress_idx = 0
@@ -122,4 +121,6 @@ def export_txt(
 
 
 if __name__ == "__main__":
+    custom_logger.setup_logging()
+    
     retrieve_artwork()
