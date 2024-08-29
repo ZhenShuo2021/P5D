@@ -209,6 +209,50 @@ class ConfigLoader:
             }
         return combined_paths
 
+    def update_config(self, options):
+        """Update configuration using a dictionary of options."""
+        if not isinstance(options, dict):
+            raise ValueError("Input must be a dictionary")
+        
+        special_key = ["rsync"]
+        base = ["local", "remote", "local_path", "remote_path"]
+        cat = ["category", "categories"]
+        special_key.extend(base)
+        special_key.extend(cat)
+        for key, value in options.items():
+            # local/remote: simply for user experience
+            # category: alias
+
+            if key not in self.config and key not in special_key:
+                raise ValueError(f"Invalid key: {key}")
+
+            if key in base:
+                if "_path" in key:
+                    key = key.replace("_path", '')
+                self.config['BASE_PATHS'][f"{key}_path"] = value
+                logger.debug(f"Input option '{key}' update successfully")
+            elif key in cat:
+                # Preprocess input
+                extract_value = value.split(',')
+                extract_value = [value.replace(" ", "") for value in extract_value]
+                extract_value = ["Others" if value in ["Other", "others", "other"] else value for value in extract_value]
+                
+                valid_categories = set()
+                for category in extract_value:
+                    if category in self.config['categories']:
+                        valid_categories.add(category)
+                    else:
+                        logger.error(f"Input option '{category}' not found in {self.config_path}")
+
+                categories_to_remove = set(self.config['categories'].keys()) - valid_categories
+                for category in categories_to_remove:
+                    self.config['categories'].pop(category, None)
+            elif key in ['tag_delimiter', 'file_type']:
+                if not isinstance(value, str):
+                    raise ValueError(f"{key} value must be a string")
+                self.config[key] = value
+            else:
+                self.config[key] = value
 
 
 if __name__ == "__main__":

@@ -82,8 +82,9 @@ remote_path = "others/喜多川海夢"
 local_path = "others"
 remote_path = "others/雜圖"
 
-["tag_delimiter"]
+[tag_delimiter]
 front = "{}_"
 between = ","
 
-file_type = ["jpg", "png", "webm"]
+[file_type]
+type = ["jpg", "png", "webm"]

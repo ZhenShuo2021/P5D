@@ -1,6 +1,7 @@
 
 # Todo: Logging if remote path exists.
 import os
+import re
 import logging
 import subprocess
 from datetime import datetime
@@ -13,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class FileSyncer:
-    def __init__(self, config_loader: ConfigLoader, log_dir: Path):
+    def __init__(self, config_loader: ConfigLoader, log_dir: Path, rsync_param: dict={}):
         self.logger = logger
         self.log_dir = log_dir
         self.config_loader = config_loader
+        self.rsync_param = rsync_param.get("rsync", {})
 
     def sync_folders(self, src: str="", dst: str="") -> None:
         if not src:
@@ -24,7 +26,7 @@ class FileSyncer:
         else:
             src, dst = Path(src), Path(dst)
             if not src.is_dir():
-                self.logger.critical(f"Local folder '{src}' not exist, terminate")
+                self.logger.error(f"Local folder '{src}' not exist, terminate")
                 raise FileNotFoundError
             if not dst.is_dir():
                 self.logger.debug(f"Create nonexisting target folder '{str(self.log_dir)}'.")
@@ -38,7 +40,7 @@ class FileSyncer:
         for key in combined_paths:
             # Not using get method to prevent infinite loop
             if not combined_paths[key]["local_path"]:
-                self.logger.critical(
+                self.logger.error(
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop.")
                 continue
             self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
@@ -52,10 +54,18 @@ class FileSyncer:
         return os.path.join(str(log_dir), f'{os.path.basename(src)}{config.LOG_TEMP_EXT}')
 
     def _run_rsync(self, src: str, dst: str, log_path: str) -> None:
-        command = [
-            'rsync', '-aq', '--ignore-existing', '--progress',
-            f'--log-file={log_path}', f'{src}/', f'{dst}/'
-        ]
+        if isinstance(self.rsync_param, str):
+            rsync_options = self.rsync_param.split()
+            
+        if not self.rsync_param:
+            command = [
+                'rsync', '-aq', '--ignore-existing', '--progress',
+                f'--log-file={log_path}', f'{src}/', f'{dst}/'
+            ]
+        else:
+            command = [
+            'rsync', *rsync_options, f'{src}/', f'{dst}/'
+            ]
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         subprocess.run(command, check=True)
 

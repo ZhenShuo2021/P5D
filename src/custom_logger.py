@@ -31,7 +31,11 @@ class CustomFormatter(logging.Formatter):
             return f"[{self.formatTime(record, '%H:%M:%S')}][{levelname}] - {record.getMessage()}"
 
 
-def setup_logging(level):
+def setup_logging(level, no_archive=False):
+    """
+    level: [logging.LOGLEVEL]
+    args: [bool], no_archive
+    """
     # Clear any existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
@@ -40,19 +44,19 @@ def setup_logging(level):
     color_formatter = CustomFormatter(use_color=True)
     plain_formatter = CustomFormatter(use_color=False)
 
-    # Create handlers
+    # Console handler
     console_handler = logging.StreamHandler()
-    os.makedirs(f'./{OUTPUT_DIR}', exist_ok=True)
-    file_handler = logging.FileHandler(f"./{OUTPUT_DIR}/system.log")
-
-    # Set formatters
     console_handler.setFormatter(color_formatter)
-    file_handler.setFormatter(plain_formatter)
-
-    # Add handlers to the root logger
     logging.getLogger().addHandler(console_handler)
-    logging.getLogger().addHandler(file_handler)
-    logging.getLogger().setLevel(logging.DEBUG)
+
+    # File handler
+    if not no_archive:
+        os.makedirs(f'./{OUTPUT_DIR}', exist_ok=True)
+        file_handler = logging.FileHandler(f"./{OUTPUT_DIR}/system.log")
+        file_handler.setFormatter(plain_formatter)
+        logging.getLogger().addHandler(file_handler)
+
+    # Set log level
     logging.getLogger().setLevel(level)
 
 if __name__ == "__main__":
