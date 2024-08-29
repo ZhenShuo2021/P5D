@@ -14,11 +14,37 @@
 git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .venv && source .venv/bin/activate && pip3 install -r requirements.txt
 ``` 
 
-使用 Powerful Pixiv Downloader 下載完成後執行 `main.py`  
+## 使用
+Powerful Pixiv Downloader 下載完成後執行 `run.py`  
 ```sh
-source .venv/bin/activate && python3 main.py
+source .venv/bin/activate && python3 run.py
 ```
 
+> [!NOTE]  
+> 搜尋遺失作品的使用方法：Powerful Pixiv Downloader 下載後不要關閉，右鍵檢查>右鍵class="beautify_scrollbar logContent">Copy>Copy outerHTML，把內容儲存為 `data/pixiv.html`，處理完成後結果會輸出在 data/pixiv_retrieve.txt
+
+參數：
+```sh
+options:
+  -h, --help               show this help message and exit
+  --no-categorize          關閉分類功能
+  --no-sync                關閉同步功能
+  --no-retrieve            關閉尋找遺失作品功能
+  --no-view                關閉統計標籤功能
+  --no-archive             關閉日誌功能
+  -q, --quiet              安靜模式
+  -v, --verbose            偵錯模式
+  -o, --options key=value  其他選項
+                           rsync: rsync 參數
+                           local: local_path 路徑
+                           remote: remote_path 路徑
+                           category 處理指定分類
+```                           
+
+使用範例：不統計標籤，不尋找遺失作品，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
+```sh
+python3 run.py --no-view --no-retrieve -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
+```
 
 ## 基礎設定
 
@@ -33,14 +59,10 @@ source .venv/bin/activate && python3 main.py
 > 下載資料夾中未指定的子資料夾不會處理，但是檔案會全部被視為其他作品放進 others 資料夾。
 
 ## 進階設定
-進入資料夾後使用 `python3 -m src.xxx` 可獨立執行每個模組
 - 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。
-- 同步：`_run_rsync` 中修改 rsync 參數，參數可參考[這裡](https://ysc.goalsoft.com.tw/blog-detail.php?target=back&no=49)。
-- 搜尋：根據文件尋找 danbooru 是否有對應作品。 
+- 同步：rsync 參數可參考[這裡](https://ysc.goalsoft.com.tw/blog-detail.php?target=back&no=49)。
+- 搜尋：根據文件尋找 danbooru 是否有對應作品，如果有其他可依據 pixiv id 搜尋作品的網站也歡迎提供，目前只有找到 danbooru 有提供 API。 
 - 檢視：檢視作品標籤比例，在 data 資料夾生成 tag_stats.jpg 和 tag_stats.txt，可以看你平常都看了啥。  
-
-> [!NOTE]  
-> 搜尋的使用方法：Powerful Pixiv Downloader 下載後不要關閉，右鍵檢查>右鍵class="beautify_scrollbar logContent">Copy>Copy outerHTML，把內容儲存為 `data/pixiv.html`，處理完成後結果會輸出在 data/pixiv_retrieve.txt
 
 ### Roadmap
 - [ ] unittest
@@ -53,28 +75,34 @@ source .venv/bin/activate && python3 main.py
 
 
 ### 架構
-```
-./
-├── main.py                    # 入口程式
-├── README.md
-├── requirements.txt
+```sh
+P5D/
+├── run.py                     # 入口程式
+├── README.md                  # 說明文件
+├── requirements.txt           # 需求套件
 ├── config
-│   └── config.toml            # 使用者定義設置
+│   └── config.toml            # 使用者定義設置
 ├── data/
-│   ├── pixiv.log              # 系統日誌
-│   ├── pixiv.html             # 下載記錄，用於取回檔案
-│   ├── pixiv_retrieve.txt     # 檔案取回結果
-│   ├── rsync_log.log          # 同步日誌
-│   ├── tag_stats.jpg          # 標籤統計圓餅圖
-│   └── tag_stats.txt          # 標籤統計結果
-└── src/
-    ├── categorizer.py         # 檔案分類
-    ├── config.py              # 系統參數
-    ├── logger.py              # 系統日誌
-    ├── retriever.py           # 搜尋遺失作品
-    ├── synchronizer.py        # 同步到遠端儲存裝置
-    ├── viewer.py              # 標籤統計
-    └── utils/
-        ├── file_utils.py      # 檔案移動工具
-        └── string_utils.py    # 字串檢查工具
+│   ├── pixiv.html             # 下載記錄，用於取回檔案
+│   ├── pixiv_retrieve.txt     # 檔案取回結果
+│   ├── rsync_log.log          # 同步日誌
+│   ├── system.log             # 系統日誌
+│   ├── tag_stats.jpg          # 標籤統計圓餅圖
+│   └── tag_stats.txt          # 標籤統計結果
+├── src/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── categorizer.py         # 檔案分類
+│   ├── config.py              # 系統參數
+│   ├── custom_logger.py       # 系統日誌
+│   ├── option.py              # 設置選項處理
+│   ├── retriever.py           # 搜尋遺失作品
+│   ├── synchronizer.py        # 同步到遠端儲存裝置
+│   ├── utils/
+│   │   ├── file_utils.py      # 檔案工具
+│   │   └── string_utils.py    # 字串工具
+│   └── viewer.py              # 標籤統計
+└── test/
+    ├── __init__.py
+    └── test_categorizer.py    # 檔案分類測試
 ```
