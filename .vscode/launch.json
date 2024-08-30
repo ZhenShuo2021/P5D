@@ -12,8 +12,13 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "envFile": "${workspaceFolder}/.env",
-            // "args": ["-v"]  // 新增的參數
-            // "args": ["--example-arg", "value"]  // 新增的參數
+            "args": [
+                "-v",
+                "--no-sync",
+                "--no-archive",
+                "-o",
+                "local=/Users/leo/Pictures/downloads拷貝3",
+                ]
         }
     ]
 }

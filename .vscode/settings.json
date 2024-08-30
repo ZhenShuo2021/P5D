@@ -1,13 +1,28 @@
 {
+    // "python.defaultInterpreterPath": "/venv/bin/python3",
+    // "window.zoomLevel": 1, // 視窗縮放
+    "editor.fontSize": 14,
+    "editor.lineHeight": 20,
+    "terminal.integrated.fontFamily": "monospace",
+    "editor.fontFamily": "MesloLGS NF",
+    "extensions.ignoreRecommendations": true, // 是否忽略顯示建議的套件
+    "files.trimTrailingWhitespace": true, // 儲存的時候，會幫你自動過濾多餘的空格
+    "files.encoding": "utf8", // 設定預設編碼
+    "files.autoGuessEncoding": false,
+
+    "files.autoSave": "onFocusChange", // 是否自動儲存檔案
+    // "files.autoSave": "afterDelay",
+    // "files.autoSaveDelay": 500,
+
+    // "workbench.colorTheme": "One Dark Pro", // 需安裝 One Dark Pro
+    "editor.selectionClipboard": false, // 關閉滑鼠滾輪中鍵複製功能
+    "editor.stickyScroll.enabled": true, // Sticky Scroll 預設是打開的
+
+    "[python]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "charliermarsh.ruff"
+    },
     "cSpell.words": [
-        "genshin",
-        "photoprism",
-        "pixiv",
-        "tomlkit"
+        "cmap"
     ],
-    // "python.pythonPath": "path/to/your/python",  // 指定 Python 解釋器的路徑
-    // "python.autoComplete.extraPaths": [
-    //     "path/to/your/project"
-    // ],  // 添加額外的自動完成路徑
-    "workspaceFolder": "/Users/leo/Documents/hugo/blog-script/batch-processing/pixiv"  // 設定工作區資料夾
 }
