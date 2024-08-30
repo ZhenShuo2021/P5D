@@ -88,3 +88,7 @@ between = ","
 
 [file_type]
 type = ["jpg", "png", "webm"]
+
+[custom]
+# 覆蓋預設 rsync 參數
+# rsync = "-aAXHv --remove-source-files"

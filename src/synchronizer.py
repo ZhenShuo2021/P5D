@@ -20,7 +20,7 @@ class FileSyncer:
         self.logger = logger
         self.log_dir = config_loader.get_log_dir()
         self.config_loader = config_loader
-        self.rsync_param = rsync_param.get("rsync", {})
+        self.rsync_param = self.update_param(config_loader.get_custom(), rsync_param)
 
     def sync_folders(self, src: Any, dst: Any) -> None:
         """Sync folder with rsync.
@@ -77,6 +77,14 @@ class FileSyncer:
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         subprocess.run(command, check=True)
 
+    def update_param(self, file_input: dict[str, str], cmd_input: dict[str, str]) -> str:
+        """Overwrite rsync parameter
+        The priority is cmd > file > default
+        """
+        # file_output = file_input.get("custom", {}).get("rsync", "")
+        # combined_string = ",".join(file_output)
+        return cmd_input.get("rsync", "") or file_input.get("rsync", "") or ""
+
 
 class LogMerger:
     def __init__(self, log_dir: Path, logger: logging.Logger):
@@ -125,6 +133,3 @@ if __name__ == "__main__":
         file_syncer.sync_folders(
             combined_paths[key]["local_path"], combined_paths[key]["remote_path"]
         )
-
-    log_merger = LogMerger(log_dir, logger)
-    log_merger.merge_logs()

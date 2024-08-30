@@ -39,4 +39,5 @@ def main():
 
     if not args.no_categorize:
         file_count = file_utils.count_files(combined_paths, logger, config.WORK_DIR)
-        print(f"\033[32m這次新增了\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")
+        happy_msg = "這次新增了" if config.WORK_DIR == "local_path" else "遠端資料夾總共有"
+        print(f"\033[32m{happy_msg}\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")

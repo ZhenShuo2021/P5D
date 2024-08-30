@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 import toml
 
@@ -190,6 +190,9 @@ class ConfigLoader:
     def get_file_type(self):
         return self.config.get("file_type", {})
 
+    def get_custom(self) -> dict[str, Any]:
+        return self.config.get("custom", {})
+
     def get_combined_paths(self) -> dict[str, dict[str, str]]:
         if not self.combined_paths:
             self.combined_paths = self.combine_path()
@@ -217,7 +220,7 @@ class ConfigLoader:
         if not isinstance(options, dict):
             raise ValueError("Input must be a dictionary")
 
-        special_key = ["rsync"]
+        special_key = ["custom_setting", "rsync"]
         base = ["local", "remote", "local_path", "remote_path"]
         cat = ["category", "categories"]
         special_key.extend(base)
