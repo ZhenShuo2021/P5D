@@ -11,6 +11,8 @@ from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader, safe_move, batch_move, move_all_tagged
 from src.utils.string_utils import is_system, is_english, is_japanese
 
+logger = logging.getLogger(__name__)
+
 
 # Do NOT change unless necessary
 class CategorizerInterface(ABC):
@@ -27,7 +29,7 @@ class CategorizerInterface(ABC):
         self.categorizes = config_loader.get_categories()
         self.combined_paths = config_loader.get_combined_paths()
         self.tag_delimiter = config_loader.get_delimiters()
-        self.logger = config_loader.logger
+        self.logger = logger
 
     @abstractmethod
     def categorize(self, category: str, preprocess: bool) -> None:
@@ -49,7 +51,7 @@ class CategorizerFactory:
     def __init__(self, config_loader: ConfigLoader):
         """ Factory for choosing and instantiate categorizers. """
         self.config_loader = config_loader
-        self.logger = config_loader.logger
+        self.logger = logger
         self.categorizers = {
             "series": SeriesCategorizer(config_loader),
             "others": OthersCategorizer(config_loader),
@@ -75,7 +77,7 @@ class CategorizerFactory:
 class CategorizerUI:
     def __init__(self, config_loader: ConfigLoader, factory: CategorizerFactory = None):
         """ UI for categorizing files. """
-        self.logger = config_loader.logger
+        self.logger = logger
         self.config_loader = config_loader
         if self.config_loader.config is None:
             self.config_loader.load_config()
@@ -112,7 +114,7 @@ class SeriesCategorizer(CategorizerInterface):
         base_path = Path(self.combined_paths.get(category).get("local_path"))
         tags = self.categorizes.get(category).get("tags")
         if preprocess:
-            batch_move(base_path, self.logger, self.categorizes.get(category).get("children"))
+            batch_move(base_path, self.categorizes.get(category).get("children"))
 
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
@@ -122,7 +124,7 @@ class SeriesCategorizer(CategorizerInterface):
         self.other_path.mkdir(parents=True, exist_ok=True)
 
     def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
-        move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter, self.logger)
+        move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter)
 
 
 class OthersCategorizer(CategorizerInterface):
@@ -173,7 +175,7 @@ class OthersCategorizer(CategorizerInterface):
                     folder_name = self.folders["JP"]
                 else:
                     folder_name = self.folders["Other"]
-                safe_move(file_path, folder_name / file_path.name, self.logger)
+                safe_move(file_path, folder_name / file_path.name)
 
 
 class CustomCategorizer(CategorizerInterface):

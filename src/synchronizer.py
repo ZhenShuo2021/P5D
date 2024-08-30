@@ -10,12 +10,13 @@ from pathlib import Path
 from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader
 
+logger = logging.getLogger(__name__)
 
 
 class FileSyncer:
-    def __init__(self, config_loader: ConfigLoader, rsync_param: dict={}):
-        self.logger = config_loader.logger
-        self.log_dir = config_loader.log_dir
+    def __init__(self, config_loader: ConfigLoader, log_dir: Path, rsync_param: dict={}):
+        self.logger = logger
+        self.log_dir = log_dir
         self.config_loader = config_loader
         self.rsync_param = rsync_param.get("rsync", {})
 
@@ -43,7 +44,7 @@ class FileSyncer:
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop.")
                 continue
             self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
-        log_merger = LogMerger(self.config_loader)
+        log_merger = LogMerger(self.log_dir)
         log_merger.merge_logs()
 
     def _log_name(self, log_dir: Path, src: Path) -> str:
@@ -69,9 +70,9 @@ class FileSyncer:
         subprocess.run(command, check=True)
 
 class LogMerger:
-    def __init__(self, config_loader: ConfigLoader):
-        self.log_dir = config_loader.log_dir
-        self.logger = config_loader.logger
+    def __init__(self, log_dir: str):
+        self.log_dir = log_dir
+        self.logger = logger
 
     def merge_logs(self) -> None:
         output_file = f"{self.log_dir}/rsync_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
@@ -110,5 +111,5 @@ if __name__ == "__main__":
     for key in combined_paths:
         file_syncer.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
 
-    log_merger = LogMerger(config_loader)
+    log_merger = LogMerger(log_dir)
     log_merger.merge_logs()
