@@ -1,15 +1,16 @@
-import os
 import logging
+import os
 from collections import Counter
 
 import matplotlib
+
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 from src import config, custom_logger
-from src.utils.file_utils import ConfigLoader
-from src.utils.string_utils import is_system, color_text, split_tags
 from src.config import STATS_FILE, WORK_DIR
+from src.utils.file_utils import ConfigLoader
+from src.utils.string_utils import color_text, is_system, split_tags
 
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 logging.getLogger('matplotlib.font_manager').setLevel(logging.CRITICAL)
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
-def read_tag_counts(file_name: str) -> Counter[str, int]:
+def read_tag_counts(file_name: str) -> Counter:
     file_name = "./" + config.OUTPUT_DIR + "/" + file_name + ".txt"
     tag_counts = Counter()
     with open(file_name, 'r') as file:
@@ -29,48 +30,48 @@ def read_tag_counts(file_name: str) -> Counter[str, int]:
     return tag_counts
 
 def plot_pie_chart(
-        tag_counts: int, 
-        top_n: int=25, 
-        skip: int=2, 
-        output_file: str=STATS_FILE, 
+        tag_counts: Counter,
+        top_n: int=25,
+        skip: int=2,
+        output_file: str=STATS_FILE,
         dpi: int=360
         ) -> None:
     output_file = output_file + ".jpg"
     keywords_to_skip = ['users', 'ブルアカ', 'BlueArchive']
     exact_match_to_skip = '閃耀色彩'
-    
-    filtered_counts = {tag: count for tag, count in tag_counts.items() 
+
+    filtered_counts = {tag: count for tag, count in tag_counts.items()
                        if not (any(keyword in tag for keyword in keywords_to_skip) or tag == exact_match_to_skip)}
-    
+
     filtered_tag_counts = Counter(filtered_counts)
-    
+
     most_common = filtered_tag_counts.most_common(top_n + skip)[skip:]
     if not most_common:
        print(color_text("標籤數量不足以製作圓餅圖（可能是目的地沒有檔案導致讀不到標籤/skip值太大）", "red"))
        return
     tags, counts = zip(*most_common)
-    
+
     plt.figure(figsize=(12, 8))
     colors = plt.cm.Paired(range(len(tags)))  # Use a colormap for colors
     wedges, texts, autotexts = plt.pie(counts, labels=tags, autopct='%1.1f%%', startangle=90, colors=colors, wedgeprops={'edgecolor': 'black'})
-    
+
     for text in texts:
         x, y = text.get_position()
         if y > 0.9:
             text.set_horizontalalignment('center')
             text.set_verticalalignment('bottom')
-    
+
     plt.axis('equal')
     plt.savefig(f'./{config.OUTPUT_DIR}/{output_file}', dpi=dpi, format='jpg', bbox_inches='tight')
     plt.close()
 
     logger.debug(f"Pie plot written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}'")
-    
+
 # tag
 def count_tags(
-        directory: str, 
-        tag_delimiter: dict[str, str], 
-        recursive: bool=True, 
+        directory: str,
+        tag_delimiter: dict[str, str],
+        recursive: bool=True,
         output_file: str='tags'
         ) -> None:
     all_tags = []
@@ -89,10 +90,10 @@ def count_tags(
                 tags = split_tags(filename, tag_delimiter)
                 all_tags.extend(tags)
                 total_files += 1
-    
+
     tag_counts = Counter(all_tags)
     sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
-    
+
     with open(f'./{config.OUTPUT_DIR}/{output_file}.txt', 'w', encoding='utf-8') as f:
         f.write(f"Total files: {total_files}\n")
         for tag, count in sorted_tags:

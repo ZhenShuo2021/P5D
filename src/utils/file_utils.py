@@ -1,13 +1,12 @@
-
+import logging
 import os
 import shutil
-import logging
 from pathlib import Path
+from typing import Optional
 
 import toml
 
-from config import *
-from src.utils.string_utils import is_system, is_empty, split_tags
+from src.utils.string_utils import is_empty, is_system, split_tags
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,9 @@ def safe_move(src: str | Path, dst: str | Path) -> None:
             logger.debug(f"Successfully move file to {dst_path.parent}.")
         elif src_path.is_dir():
             if dst_path.exists():
-                logger.warning(f"Destination directory '{dst_path}' already exists. It will be renamed.")
+                logger.warning(
+                    f"Destination directory '{dst_path}' already exists. It will be renamed."
+                )
                 dst_path = generate_unique_path(dst_path)
             shutil.move(str(src_path), str(dst_path))
             logger.debug(f"Successfully move folder to {dst_path.parent}.")
@@ -52,7 +53,7 @@ def safe_move_dir(src_folder: Path, dst_folder: Path) -> None:
 
 
 def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
-    """Move all files in "child_folders" to "parent_folder". 
+    """Move all files in "child_folders" to "parent_folder".
 
     By default, the child and the parent folders are in the same level:
         ├── parent
@@ -76,18 +77,14 @@ def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
                     logger.debug(f"'{child_path}' is not empty; deleting process canceled.")
             else:
                 logger.debug(f"Child folder '{child_path}' not exist.")
-    
+
     elif isinstance(child_folders, Path) and child_folders.is_dir():
         safe_move_dir(base_folder, parent_folder)
 
 
 def move_tagged(
-        base_path: Path, 
-        other_path: Path, 
-        file_path: Path, 
-        file_tags: list[str], 
-        tags: dict[str, str]
-        ) -> None:
+    base_path: Path, other_path: Path, file_path: Path, file_tags: list[str], tags: dict[str, str]
+) -> None:
     """Move tagged file for a single file. Search the first file tag in tags and move it to target_folder.
 
     base_path: File destination. In configuration: BASE_PATHS / CATEGORIES.BlueArchive.remote
@@ -103,12 +100,8 @@ def move_tagged(
         safe_move(file_path, other_path / file_path.name)
 
 
-def get_tagged_path(
-        base_path: Path, 
-        file_tags: list[str], 
-        tags: dict[str, str]
-        ) -> Path:
-    """ Return the target folder path based on the file tags. """
+def get_tagged_path(base_path: Path, file_tags: list[str], tags: dict[str, str]) -> Optional[Path]:
+    """Return the target folder path based on the file tags."""
     for tag in file_tags:
         if tag in tags:
             target_folder = Path(base_path) / tags[tag]
@@ -116,14 +109,12 @@ def get_tagged_path(
             return target_folder
     return None
 
+
 def move_all_tagged(
-        base_path: Path, 
-        other_path: Path, 
-        tags: dict[str, str], 
-        tag_delimiter: dict
-        ) -> None:
+    base_path: Path, other_path: Path, tags: dict[str, str], tag_delimiter: dict[str, str]
+) -> None:
     """Move tagged file for all files."""
-    for file_path in base_path.rglob('*'):
+    for file_path in base_path.rglob("*"):
         if file_path.is_file() and not is_system(file_path.name):
             file_name = file_path.stem
             file_tags = split_tags(file_name, tag_delimiter)
@@ -133,7 +124,7 @@ def move_all_tagged(
 def generate_unique_path(path: Path) -> Path:
     counter = 1
     stem = path.stem
-    suffix = path.suffix if path.is_file() else ''
+    suffix = path.suffix if path.is_file() else ""
     parent = path.parent
 
     new_path = parent / f"{stem}-{counter}{suffix}"
@@ -144,7 +135,7 @@ def generate_unique_path(path: Path) -> Path:
     return new_path
 
 
-def count_files(paths: dict[str, Path], dir: str="remote_path") -> dict[str, int]:
+def count_files(paths: dict[str, dict[str, str]], work_dir: str = "remote_path") -> int:
     file_count = 0
 
     for _, path in paths.items():
@@ -153,8 +144,7 @@ def count_files(paths: dict[str, Path], dir: str="remote_path") -> dict[str, int
             logger.error(f"FileNotFoundError: '{path}' does not exist or not a directory.")
         logger.debug(f"Counting number of files of '{path}'.")
 
-        
-        for file_path in path.rglob('*'):
+        for file_path in path.rglob("*"):
             if file_path.is_file() and not is_system(file_path):
                 file_count += 1
 
@@ -162,58 +152,57 @@ def count_files(paths: dict[str, Path], dir: str="remote_path") -> dict[str, int
 
 
 class ConfigLoader:
-    def __init__(self, config_path='config/config.toml'):
+    def __init__(self, config_path: str = "config/config.toml"):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_path = os.path.join(base_dir, "../../", config_path)
-        self.config = None
-        self.combined_paths = None
+        self.config = {}
+        self.combined_paths: dict[str, dict[str, str]] = {}
 
     def load_config(self):
         try:
-            with open(self.config_path, 'r') as file:
-                self.config = (toml.load(file))
+            with open(self.config_path, "r") as file:
+                self.config = toml.load(file)
                 logger.debug("Configuration loaded successfully.")
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
             raise
 
     def get_base_paths(self):
-        return self.config.get('BASE_PATHS', {})
+        return self.config.get("BASE_PATHS", {})
 
     def get_categories(self):
-        return self.config.get('categories', {})
+        return self.config.get("categories", {})
 
     def get_delimiters(self):
-        return self.config.get('tag_delimiter', {})
-    
+        return self.config.get("tag_delimiter", {})
+
     def get_file_type(self):
-        return self.config.get('file_type', {})
-    
-    def get_combined_paths(self):
-        if self.combined_paths is None:
+        return self.config.get("file_type", {})
+
+    def get_combined_paths(self) -> dict[str, dict[str, str]]:
+        if not self.combined_paths:
             self.combined_paths = self.combine_path()
         return self.combined_paths
 
-    def combine_path(self):
+    def combine_path(self) -> dict[str, dict[str, str]]:
         base_paths = self.get_base_paths()
         categories = self.get_categories()
         combined_paths = {}
-        # combined_paths = dict.fromkeys(["local", "remote"], dict())
 
         for category, data in categories.items():
-            local_combined = os.path.join(base_paths['local_path'], data['local_path'])
-            remote_combined = os.path.join(base_paths['remote_path'], data['remote_path'])
+            local_combined = os.path.join(base_paths["local_path"], data["local_path"])
+            remote_combined = os.path.join(base_paths["remote_path"], data["remote_path"])
             combined_paths[category] = {
-                'local_path': local_combined,
-                'remote_path': remote_combined,
+                "local_path": local_combined,
+                "remote_path": remote_combined,
             }
         return combined_paths
 
-    def update_config(self, options: dict):
+    def update_config(self, options: dict[str, str]):
         """Update configuration using a dictionary of options."""
         if not isinstance(options, dict):
             raise ValueError("Input must be a dictionary")
-        
+
         special_key = ["rsync"]
         base = ["local", "remote", "local_path", "remote_path"]
         cat = ["category", "categories"]
@@ -228,26 +217,29 @@ class ConfigLoader:
 
             if key in base:
                 if "_path" in key:
-                    key = key.replace("_path", '')
-                self.config['BASE_PATHS'][f"{key}_path"] = value
+                    key = key.replace("_path", "")
+                self.config["BASE_PATHS"][f"{key}_path"] = value
                 logger.debug(f"Input option '{key}' update successfully")
             elif key in cat:
                 # Preprocess input
-                extract_value = value.split(',')
+                extract_value = value.split(",")
                 extract_value = [value.replace(" ", "") for value in extract_value]
-                extract_value = ["Others" if value in ["Other", "others", "other"] else value for value in extract_value]
-                
+                extract_value = [
+                    "Others" if value in ["Other", "others", "other"] else value
+                    for value in extract_value
+                ]
+
                 valid_categories = set()
                 for category in extract_value:
-                    if category in self.config['categories']:
+                    if category in self.config["categories"]:
                         valid_categories.add(category)
                     else:
                         logger.error(f"Input option '{category}' not found in {self.config_path}")
 
-                categories_to_remove = set(self.config['categories'].keys()) - valid_categories
+                categories_to_remove = set(self.config["categories"].keys()) - valid_categories
                 for category in categories_to_remove:
-                    self.config['categories'].pop(category, None)
-            elif key in ['tag_delimiter', 'file_type']:
+                    self.config["categories"].pop(category, None)
+            elif key in ["tag_delimiter", "file_type"]:
                 if not isinstance(value, str):
                     raise ValueError(f"{key} value must be a string")
                 self.config[key] = value
@@ -261,7 +253,7 @@ if __name__ == "__main__":
     tag_delimiters = config_loader.get_delimiters()
 
     combined_paths = config_loader.get_combined_paths()
-    
+
     for category, paths in combined_paths.items():
         print(f"{category} - Local: {paths['local_path']}, Remote: {paths['remote_path']}")
 

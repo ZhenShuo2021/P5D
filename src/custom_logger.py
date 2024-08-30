@@ -10,7 +10,7 @@ class CustomFormatter(logging.Formatter):
         logging.INFO: "\033[37m",
         logging.WARNING: "\033[33m",
         logging.ERROR: "\033[31m",
-        logging.CRITICAL: "\033[31;1m"
+        logging.CRITICAL: "\033[31;1m",
     }
     GREEN = "\033[32m"
     RESET = "\033[0m"
@@ -23,8 +23,10 @@ class CustomFormatter(logging.Formatter):
         if self.use_color:
             color = self.COLORS.get(record.levelno, self.RESET)
             levelname = record.levelname.lower()
-            return f"[{self.GREEN}{self.formatTime(record, '%H:%M:%S')}{self.RESET}]" \
+            return (
+                f"[{self.GREEN}{self.formatTime(record, '%H:%M:%S')}{self.RESET}]"
                 f"[{color}{levelname}{self.RESET}] - {record.getMessage()}"
+            )
         else:
             # Convert levelname to lowercase for file logs
             levelname = record.levelname.lower()
@@ -51,13 +53,14 @@ def setup_logging(level, no_archive=False):
 
     # File handler
     if not no_archive:
-        os.makedirs(f'./{OUTPUT_DIR}', exist_ok=True)
+        os.makedirs(f"./{OUTPUT_DIR}", exist_ok=True)
         file_handler = logging.FileHandler(f"./{OUTPUT_DIR}/system.log")
         file_handler.setFormatter(plain_formatter)
         logging.getLogger().addHandler(file_handler)
 
     # Set log level
     logging.getLogger().setLevel(level)
+
 
 if __name__ == "__main__":
     # Set up logging

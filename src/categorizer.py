@@ -8,8 +8,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from src import config, custom_logger
-from src.utils.file_utils import ConfigLoader, safe_move, batch_move, move_all_tagged
-from src.utils.string_utils import is_system, is_english, is_japanese
+from src.utils.file_utils import ConfigLoader, batch_move, move_all_tagged, safe_move
+from src.utils.string_utils import is_english, is_japanese, is_system
 
 logger = logging.getLogger(__name__)
 
@@ -33,39 +33,41 @@ class CategorizerInterface(ABC):
 
     @abstractmethod
     def categorize(self, category: str, preprocess: bool) -> None:
-        """ Main categorize function. """
+        """Main categorize function."""
         pass
 
     @abstractmethod
     def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
-        """ Preprocessing for folders. For example, create an 'other' folder. """
+        """Preprocessing for folders. For example, create an 'other' folder."""
         pass
 
     @abstractmethod
     def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
-        """ Helper function for categorize. """
+        """Helper function for categorize."""
         pass
 
 
-class CategorizerFactory:
-    def __init__(self, config_loader: ConfigLoader):
-        """ Factory for choosing and instantiate categorizers. """
+class CategorizerAdapter:
+    def __init__(self, config_loader: ConfigLoader, logger: logging.Logger):
+        """Factory for choosing and instantiate categorizers."""
         self.config_loader = config_loader
         self.logger = logger
         self.categorizers = {
             "series": SeriesCategorizer(config_loader),
             "others": OthersCategorizer(config_loader),
-            "custom": CustomCategorizer(config_loader)
+            "custom": CustomCategorizer(config_loader),
         }
 
-    def get_categorizer(self, category: str, categories: dict[str, str]) -> tuple[bool, CategorizerInterface | None]:
+    def get_categorizer(
+        self, category: str, categories: dict[str, dict[str, str]]
+    ) -> tuple[bool, CategorizerInterface | None]:
         # Dynamically choose the categorizer base on the key existence.
         preprocess = "children" in categories.get(category, {}) or category == "Others"
         if "children" in categories[category] or "tags" in categories[category]:
             categorizer_type = "series"
         elif category == "Others":
             categorizer_type = "others"
-        elif "tags" not in categories[category]:
+        elif "tags" not in categories.get(category, {}):
             categorizer_type = None
         else:
             categorizer_type = "custom"
@@ -75,11 +77,11 @@ class CategorizerFactory:
 
 
 class CategorizerUI:
-    def __init__(self, config_loader: ConfigLoader, factory: CategorizerFactory = None):
-        """ UI for categorizing files. """
+    def __init__(self, config_loader: ConfigLoader, adapter: CategorizerAdapter = None):
+        """UI for categorizing files."""
         self.logger = logger
         self.config_loader = config_loader
-        if self.config_loader.config is None:
+        if not self.config_loader.config:
             self.config_loader.load_config()
         base_path_local = config_loader.get_base_paths().get("local_path")
         if not Path(base_path_local).exists():
@@ -88,13 +90,13 @@ class CategorizerUI:
 
         self.combined_paths = config_loader.get_combined_paths()
         self.categories = config_loader.get_categories()
-        self.factory = factory or CategorizerFactory(config_loader)
+        self.adapter = adapter or CategorizerAdapter(config_loader, logger)
 
     def categorize(self, category: str = "") -> None:
         if not category:
             self.categorize_all()
         else:
-            preprocess, categorizer = self.factory.get_categorizer(category, self.categories)
+            preprocess, categorizer = self.adapter.get_categorizer(category, self.categories)
             if not categorizer:
                 self.logger.debug(f"Skip categorize category '{category}'.")
                 return
@@ -104,14 +106,15 @@ class CategorizerUI:
         for category in self.categories:
             if not category:
                 self.logger.critical(
-                    f"Category '{category}' not found, continue to prevent infinite loop.")
+                    f"Category '{category}' not found, continue to prevent infinite loop."
+                )
                 continue
             self.categorize(category)
 
 
 class SeriesCategorizer(CategorizerInterface):
     def categorize(self, category: str, preprocess: bool) -> None:
-        base_path = Path(self.combined_paths.get(category).get("local_path"))
+        base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
         tags = self.categorizes.get(category).get("tags")
         if preprocess:
             batch_move(base_path, self.categorizes.get(category).get("children"))
@@ -138,17 +141,17 @@ class OthersCategorizer(CategorizerInterface):
     """
 
     def categorize(self, category: str, preprocess: bool) -> None:
-        base_path = Path(self.combined_paths.get(category).get("local_path"))
+        base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
         tags = self.categorizes.get(category).get("tags")
         if preprocess:
             # For files doesn't belong to any category, preprocess is always true.
             pass
 
-        if tags != None:
+        if tags is not None:
             # Categorize files with tags if key "tags" exist.
             self.other_path = base_path / tags.get(self.OTHERS_NAME, "others")
             self.other_path.mkdir(exist_ok=True)
-            move_all_tagged(base_path.parent, self.other_path, tags, self.tag_delimiter, self.logger)
+            move_all_tagged(base_path.parent, self.other_path, tags, self.tag_delimiter)
         else:
             # If key "tags" not exist, categorize with categorize_helper
             self.prepare_folders(base_path, tags)
@@ -158,7 +161,7 @@ class OthersCategorizer(CategorizerInterface):
         self.folders = {
             "EN": base_path / self.EN,
             "JP": base_path / self.JP,
-            "Other": base_path / self.Other
+            "Other": base_path / self.Other,
         }
         for folder in self.folders.values():
             if not folder.is_dir():
@@ -185,7 +188,7 @@ class CustomCategorizer(CategorizerInterface):
     def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
         pass
 
-    def categorize_helper(self, base_path: Path, other_path: Path, tags: dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
         pass
 
     def _helper_function(self) -> None:

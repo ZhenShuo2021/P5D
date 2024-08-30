@@ -1,11 +1,13 @@
 # src/__init__.py
 
+import logging
 import os
 from pathlib import Path
-from . import categorizer, synchronizer, retriever, viewer, option, config
-from .utils import file_utils
+
+from . import categorizer, config, option, retriever, synchronizer, viewer
 from .custom_logger import setup_logging
-import logging
+from .utils import file_utils
+
 
 def main():
     root = Path(__file__).resolve().parent.parent
@@ -14,7 +16,7 @@ def main():
     args = option.build_parser()
     setup_logging(args.loglevel, args.no_archive)
     logger = logging.getLogger(__name__)
-    
+
     config_loader = file_utils.ConfigLoader()
     config_loader.load_config()
     config_loader.update_config(args.options)
@@ -28,7 +30,7 @@ def main():
     if not args.no_sync:
         logger.info("開始同步檔案...")
         log_dir = root / Path(config.OUTPUT_DIR)
-        synchronizer.FileSyncer(config_loader, log_dir, args.options).sync_folders()
+        synchronizer.FileSyncer(config_loader, log_dir, args.options).sync_folders(None, None)
 
     if not args.no_retrieve:
         logger.info("開始尋找遺失作品...")
