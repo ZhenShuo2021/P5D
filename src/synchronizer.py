@@ -9,13 +9,16 @@ from typing import Any
 from src import config, custom_logger
 from src.utils.file_utils import ConfigLoader
 
-logger = logging.getLogger(__name__)
-
 
 class FileSyncer:
-    def __init__(self, config_loader: ConfigLoader, log_dir: Path, rsync_param: dict = {}):
+    def __init__(
+        self,
+        config_loader: ConfigLoader,
+        logger: logging.Logger,
+        rsync_param: dict = {},
+    ):
         self.logger = logger
-        self.log_dir = log_dir
+        self.log_dir = config_loader.get_log_dir()
         self.config_loader = config_loader
         self.rsync_param = rsync_param.get("rsync", {})
 
@@ -30,8 +33,7 @@ class FileSyncer:
         else:
             src, dst = Path(src), Path(dst)
             if not src.is_dir():
-                self.logger.error(f"Local folder '{src}' not exist, terminate")
-                raise FileNotFoundError
+                self.logger.error(f"Syncing file error: local folder '{src}' not exist.")
             if not dst.is_dir():
                 self.logger.debug(f"Create nonexisting target folder '{str(self.log_dir)}'.")
                 dst.mkdir(parents=True, exist_ok=True)
@@ -49,7 +51,7 @@ class FileSyncer:
                 )
                 continue
             self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
-        log_merger = LogMerger(self.log_dir)
+        log_merger = LogMerger(self.log_dir, self.logger)
         log_merger.merge_logs()
 
     def _log_name(self, log_dir: Path, src: Path) -> str:
@@ -59,8 +61,6 @@ class FileSyncer:
         return os.path.join(str(log_dir), f"{os.path.basename(src)}{config.LOG_TEMP_EXT}")
 
     def _run_rsync(self, src: str, dst: str, log_path: str) -> None:
-        rsync_options = self.rsync_param.split()
-
         if not self.rsync_param:
             command = [
                 "rsync",
@@ -72,13 +72,14 @@ class FileSyncer:
                 f"{dst}/",
             ]
         else:
+            rsync_options = self.rsync_param.split()
             command = ["rsync", *rsync_options, f"{src}/", f"{dst}/"]
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         subprocess.run(command, check=True)
 
 
 class LogMerger:
-    def __init__(self, log_dir: Path):
+    def __init__(self, log_dir: Path, logger: logging.Logger):
         self.log_dir = log_dir
         self.logger = logger
 
@@ -110,19 +111,20 @@ class LogMerger:
 
 if __name__ == "__main__":
     custom_logger.setup_logging(logging.DEBUG)
+    logger = logging.getLogger(__name__)
 
-    config_loader = ConfigLoader()
+    config_loader = ConfigLoader(logger)
     config_loader.load_config()
     combined_paths = config_loader.get_combined_paths()
 
     script_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     log_dir = script_dir.parent / Path(config.OUTPUT_DIR)
-    file_syncer = FileSyncer(config_loader, log_dir)
+    file_syncer = FileSyncer(config_loader, logger)
 
     for key in combined_paths:
         file_syncer.sync_folders(
             combined_paths[key]["local_path"], combined_paths[key]["remote_path"]
         )
 
-    log_merger = LogMerger(log_dir)
+    log_merger = LogMerger(log_dir, logger)
     log_merger.merge_logs()

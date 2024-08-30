@@ -10,20 +10,19 @@ from bs4 import BeautifulSoup
 from src import config, custom_logger
 from src.utils.string_utils import color_text
 
-logger = logging.getLogger(__name__)
 
 progress_lock = threading.Lock()
 progress_idx = 0
 
 
-def retrieve_artwork() -> None:
+def retrieve_artwork(logger) -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(base_dir, "../", config.OUTPUT_DIR, f"{config.MISS_LOG}.html")
     html_content = read_html(file_path)
     urls = extract_urls(html_content)
     # print(f"遺失作品數量：{len(urls)}")
 
-    found_posts, not_found_posts, take_down_posts = process_urls(config.SOURCE_URL, urls)
+    found_posts, not_found_posts, take_down_posts = process_urls(config.SOURCE_URL, urls, logger)
     output_path = f"./{config.OUTPUT_DIR}/{config.MISS_LOG}_retrieve.txt"
     export_txt(output_path, found_posts, not_found_posts, take_down_posts)
     logger.debug(f"Retrieving result written to '{output_path}'")
@@ -72,7 +71,7 @@ def fetch_url(base_url: str, url_suffix: str) -> tuple[str | None, str | None, s
 
 
 def process_urls(
-    base_url: str, urls: list[str], max_threads: int = 5
+    base_url: str, urls: list[str], logger: logging.Logger, max_threads: int = 5
 ) -> tuple[list[str], list[str], list[str]]:
     found_posts = []
     not_found_posts = []
@@ -122,5 +121,6 @@ def export_txt(
 
 if __name__ == "__main__":
     custom_logger.setup_logging(logging.DEBUG)
+    logger = logging.getLogger(__name__)
 
-    retrieve_artwork()
+    retrieve_artwork(logger)

@@ -6,12 +6,12 @@ from typing import Optional
 
 import toml
 
+from src.config import OUTPUT_DIR
+from src import custom_logger
 from src.utils.string_utils import is_empty, is_system, split_tags
 
-logger = logging.getLogger(__name__)
 
-
-def safe_move(src: str | Path, dst: str | Path) -> None:
+def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
     if src == dst:
         return
 
@@ -45,14 +45,14 @@ def safe_move(src: str | Path, dst: str | Path) -> None:
         logger.error(f"Error occurred while moving '{src}' to '{dst}': {e}")
 
 
-def safe_move_dir(src_folder: Path, dst_folder: Path) -> None:
+def safe_move_dir(src_folder: Path, dst_folder: Path, logger: logging.Logger) -> None:
     """Move the files in first level of src_folder to the dst_folder"""
     for file_path in src_folder.iterdir():
         if file_path.is_file() and not is_system(file_path.name):
-            safe_move(file_path, dst_folder / file_path.name)
+            safe_move(file_path, dst_folder / file_path.name, logger)
 
 
-def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
+def batch_move(parent_folder: Path, logger: logging.Logger, child_folders: list[str] = []) -> None:
     """Move all files in "child_folders" to "parent_folder".
 
     By default, the child and the parent folders are in the same level:
@@ -69,7 +69,7 @@ def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
         for child_name in child_folders:
             child_path = base_folder / child_name
             if child_path.is_dir():
-                safe_move_dir(child_path, parent_folder)
+                safe_move_dir(child_path, parent_folder, logger)
                 if is_empty(child_path):
                     shutil.rmtree(str(child_path))
                     logger.info(f"Deleting empty child folder '{child_path}'.")
@@ -83,7 +83,12 @@ def batch_move(parent_folder: Path, child_folders: list[str] = []) -> None:
 
 
 def move_tagged(
-    base_path: Path, other_path: Path, file_path: Path, file_tags: list[str], tags: dict[str, str]
+    base_path: Path,
+    other_path: Path,
+    file_path: Path,
+    file_tags: list[str],
+    tags: dict[str, str],
+    logger: logging.Logger,
 ) -> None:
     """Move tagged file for a single file. Search the first file tag in tags and move it to target_folder.
 
@@ -95,9 +100,9 @@ def move_tagged(
     """
     target_folder = get_tagged_path(base_path, file_tags, tags)
     if target_folder:
-        safe_move(file_path, target_folder / file_path.name)
+        safe_move(file_path, target_folder / file_path.name, logger)
     else:
-        safe_move(file_path, other_path / file_path.name)
+        safe_move(file_path, other_path / file_path.name, logger)
 
 
 def get_tagged_path(base_path: Path, file_tags: list[str], tags: dict[str, str]) -> Optional[Path]:
@@ -111,14 +116,18 @@ def get_tagged_path(base_path: Path, file_tags: list[str], tags: dict[str, str])
 
 
 def move_all_tagged(
-    base_path: Path, other_path: Path, tags: dict[str, str], tag_delimiter: dict[str, str]
+    base_path: Path,
+    other_path: Path,
+    tags: dict[str, str],
+    tag_delimiter: dict[str, str],
+    logger: logging.Logger,
 ) -> None:
     """Move tagged file for all files."""
     for file_path in base_path.rglob("*"):
         if file_path.is_file() and not is_system(file_path.name):
             file_name = file_path.stem
             file_tags = split_tags(file_name, tag_delimiter)
-            move_tagged(base_path, other_path, file_path, file_tags, tags)
+            move_tagged(base_path, other_path, file_path, file_tags, tags, logger)
 
 
 def generate_unique_path(path: Path) -> Path:
@@ -135,7 +144,7 @@ def generate_unique_path(path: Path) -> Path:
     return new_path
 
 
-def count_files(paths: dict[str, dict[str, str]], work_dir: str = "remote_path") -> int:
+def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remote_path") -> int:
     file_count = 0
 
     for _, path in paths.items():
@@ -152,19 +161,21 @@ def count_files(paths: dict[str, dict[str, str]], work_dir: str = "remote_path")
 
 
 class ConfigLoader:
-    def __init__(self, config_path: str = "config/config.toml"):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config_path = os.path.join(base_dir, "../../", config_path)
+    def __init__(self, logger: logging.Logger, config_path: str = "config/config.toml"):
+        base_dir = Path(__file__).resolve().parents[2]
+        self.log_dir = base_dir / OUTPUT_DIR
+        self.config_path = base_dir / config_path
         self.config = {}
         self.combined_paths: dict[str, dict[str, str]] = {}
+        self.logger = logger
 
     def load_config(self):
         try:
             with open(self.config_path, "r") as file:
                 self.config = toml.load(file)
-                logger.debug("Configuration loaded successfully.")
+                self.logger.debug("Configuration loaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to load configuration: {e}")
+            self.logger.error(f"Failed to load configuration: {e}")
             raise
 
     def get_base_paths(self):
@@ -183,6 +194,9 @@ class ConfigLoader:
         if not self.combined_paths:
             self.combined_paths = self.combine_path()
         return self.combined_paths
+
+    def get_log_dir(self) -> Path:
+        return self.log_dir
 
     def combine_path(self) -> dict[str, dict[str, str]]:
         base_paths = self.get_base_paths()
@@ -219,7 +233,7 @@ class ConfigLoader:
                 if "_path" in key:
                     key = key.replace("_path", "")
                 self.config["BASE_PATHS"][f"{key}_path"] = value
-                logger.debug(f"Input option '{key}' update successfully")
+                self.logger.debug(f"Input option '{key}' update successfully")
             elif key in cat:
                 # Preprocess input
                 extract_value = value.split(",")
@@ -234,7 +248,9 @@ class ConfigLoader:
                     if category in self.config["categories"]:
                         valid_categories.add(category)
                     else:
-                        logger.error(f"Input option '{category}' not found in {self.config_path}")
+                        self.logger.error(
+                            f"Input option '{category}' not found in {self.config_path}"
+                        )
 
                 categories_to_remove = set(self.config["categories"].keys()) - valid_categories
                 for category in categories_to_remove:
@@ -248,7 +264,9 @@ class ConfigLoader:
 
 
 if __name__ == "__main__":
-    config_loader = ConfigLoader()
+    custom_logger.setup_logging(logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    config_loader = ConfigLoader(logger)
     config_loader.load_config()
     tag_delimiters = config_loader.get_delimiters()
 
