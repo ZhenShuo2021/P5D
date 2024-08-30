@@ -146,7 +146,7 @@ class OthersCategorizer(CategorizerInterface):
             # Categorize files with tags if key "tags" exist.
             self.other_path = base_path / tags.get(self.OTHERS_NAME, "others")
             self.other_path.mkdir(exist_ok=True)
-            move_all_tagged(base_path.parent, self.other_path, tags, self.tag_delimiter)
+            move_all_tagged(base_path.parent, self.other_path, tags, self.tag_delimiter, self.logger)
         else:
             # If key "tags" not exist, categorize with categorize_helper
             self.prepare_folders(base_path, tags)

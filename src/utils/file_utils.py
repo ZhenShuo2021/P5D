@@ -10,7 +10,7 @@ from src import config
 from src.utils.string_utils import is_system, is_empty, split_tags
 
 
-def safe_move(src: str | Path, dst: str | Path, logger) -> None:
+def safe_move(src: str|Path, dst: str|Path, logger: logging) -> None:
     if src == dst:
         return
 
@@ -42,14 +42,14 @@ def safe_move(src: str | Path, dst: str | Path, logger) -> None:
         logger.error(f"Error occurred while moving '{src}' to '{dst}': {e}")
 
 
-def safe_move_dir(src_folder: Path, dst_folder: Path, logger) -> None:
+def safe_move_dir(src_folder: Path, dst_folder: Path, logger: logging) -> None:
     """Move the files in first level of src_folder to the dst_folder"""
     for file_path in src_folder.iterdir():
         if file_path.is_file() and not is_system(file_path.name):
             safe_move(file_path, dst_folder / file_path.name, logger)
 
 
-def batch_move(parent_folder: Path, logger, child_folders: list[str] = []) -> None:
+def batch_move(parent_folder: Path, logger: logging, child_folders: list[str] = []) -> None:
     """Move all files in "child_folders" to "parent_folder". 
 
     By default, the child and the parent folders are in the same level:
@@ -85,7 +85,7 @@ def move_tagged(
         file_path: Path, 
         file_tags: list[str], 
         tags: dict[str, str],
-        logger
+        logger: logging
         ) -> None:
     """Move tagged file for a single file. Search the first file tag in tags and move it to target_folder.
 
@@ -120,7 +120,7 @@ def move_all_tagged(
         other_path: Path, 
         tags: dict[str, str], 
         tag_delimiter: dict,
-        logger
+        logger: logging
         ) -> None:
     """Move tagged file for all files."""
     for file_path in base_path.rglob('*'):
@@ -144,11 +144,11 @@ def generate_unique_path(path: Path) -> Path:
     return new_path
 
 
-def count_files(paths: dict[str, Path], logger, dir: str="remote_path") -> dict[str, int]:
+def count_files(paths: dict[str, Path], logger: logging, work_dir: str="remote_path") -> dict[str, int]:
     file_count = 0
 
     for _, path in paths.items():
-        path = Path(path[dir])
+        path = Path(path[work_dir])
         if not path.is_dir():
             logger.warning(f"Count files: '{path}' does not exist or not a directory.")
         logger.debug(f"Counting number of files of '{path}'.")
@@ -162,7 +162,7 @@ def count_files(paths: dict[str, Path], logger, dir: str="remote_path") -> dict[
 
 
 class ConfigLoader:
-    def __init__(self, logger, config_path='config/config.toml'):
+    def __init__(self, logger: logging, config_path: str='config/config.toml'):
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.log_dir = self.base_dir / Path(config.OUTPUT_DIR)
         self.config_path = os.path.join(self.base_dir, "../../", config_path)
@@ -211,7 +211,7 @@ class ConfigLoader:
             }
         return combined_paths
 
-    def update_config(self, options):
+    def update_config(self, options: dict):
         """Update configuration using a dictionary of options."""
         if not isinstance(options, dict):
             raise ValueError("Input must be a dictionary")
