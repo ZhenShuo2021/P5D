@@ -3,25 +3,36 @@
 後處理 Powerful Pixiv Downloader 標籤，把依照作品分類的檔案再細分成各個角色，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
 
 ## 功能
-📁 分類：將指定作品（如 IM BA）根據角色分類到不同資料夾  
-🔄 同步：上傳到 NAS  
+📁 分類：根據角色分類到不同資料夾  
+🔄 同步：上傳到 NAS （不支援 Windows）  
 🔍 搜尋：到 danbooru 搜尋遺失的作品  
-📊 檢視：作品標籤比例  
+📊 檢視：作品標籤比例   
+
+由於同步功能使用 rsync 完成，所以 Windows 系統不支援檔案同步。
 
 ## 安裝
-安裝好 [Python](https://liaoxuefeng.com/books/python/install/) 後安裝此腳本
+需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。使用以下指令安裝腳本：
 ```sh
 git clone -q https://github.com/ZhenShuo2021/P5D && cd P5D && python3 -m venv .venv && source .venv/bin/activate && pip3 install -r requirements.txt
 ``` 
+
+## 基礎設定
+
+在 `config/config.toml` 設定：
+1. BASE_PATHS: 本地及遠端資料夾路徑
+2. categories: 分類，也就是 Pixiv Downloader 中設定的[標籤](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E8%A8%AD%E5%AE%9A%E9%81%B8%E9%A0%85?id=%e4%bd%bf%e7%94%a8%e7%ac%ac%e4%b8%80%e5%80%8b%e5%8c%b9%e9%85%8d%e7%9a%84-tag-%e5%bb%ba%e7%ab%8b%e8%b3%87%e6%96%99%e5%a4%be)
+3. children: 用於作品有多個分支。children 的檔案會全部移動到該分類的資料夾
+4. tags: 此處設定標籤及其翻譯對應，進一步依照標籤分類檔案，如果標籤有多種別名可以全部綁定到同一個資料夾
+5. tag_delimiter: 設定第一個標籤和標籤之間的分隔符號，依照[命名規則](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E4%BE%BF%E6%8D%B7%E5%8A%9F%E8%83%BD?id=%e5%84%b2%e5%ad%98%e5%92%8c%e8%bc%89%e5%85%a5%e5%91%bd%e5%90%8d%e8%a6%8f%e5%89%87)設定
+
+> [!CAUTION]  
+> 下載資料夾中第一層的檔案會全部被視為其他作品放進 others 資料夾。
 
 ## 使用
 Powerful Pixiv Downloader 下載完成後執行 `run.py`  
 ```sh
 source .venv/bin/activate && python3 run.py
 ```
-
-> [!NOTE]  
-> 搜尋遺失作品的使用方法：Powerful Pixiv Downloader 下載後不要關閉，右鍵檢查>右鍵class="beautify_scrollbar logContent">Copy>Copy outerHTML，把內容儲存為 `data/pixiv.html`，處理完成後結果會輸出在 data/pixiv_retrieve.txt
 
 參數：
 ```sh
@@ -38,7 +49,7 @@ options:
                            rsync: rsync 參數
                            local: local_path 路徑
                            remote: remote_path 路徑
-                           category 處理指定分類
+                           category: 處理指定分類
 ```                           
 
 使用範例：不統計標籤，不尋找遺失作品，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
@@ -46,17 +57,8 @@ options:
 python3 run.py --no-view --no-retrieve -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
 ```
 
-## 基礎設定
-
-`config.toml` 設定：
-1. BASE_PATHS: 本地資料夾以及遠端儲存資料夾位置
-2. categories: 分類，也就是 Pixiv Downloader 中設定的[標籤](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E8%A8%AD%E5%AE%9A%E9%81%B8%E9%A0%85?id=%e4%bd%bf%e7%94%a8%e7%ac%ac%e4%b8%80%e5%80%8b%e5%8c%b9%e9%85%8d%e7%9a%84-tag-%e5%bb%ba%e7%ab%8b%e8%b3%87%e6%96%99%e5%a4%be)
-3. children: 用於作品有多個分支，會把 children 的檔案全部移動到相同資料夾
-4. tags: 設定標籤及其翻譯對應，進一步依照標籤分類檔案，如果標籤有多種別名可以全部綁定到同一個資料夾
-5. tag_delimiter: 設定第一個標籤和標籤之間的分隔符號，依照[命名規則](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E4%BE%BF%E6%8D%B7%E5%8A%9F%E8%83%BD?id=%e5%84%b2%e5%ad%98%e5%92%8c%e8%bc%89%e5%85%a5%e5%91%bd%e5%90%8d%e8%a6%8f%e5%89%87)設定
-
-> [!CAUTION]  
-> 下載資料夾中未指定的子資料夾不會處理，但是檔案會全部被視為其他作品放進 others 資料夾。
+> [!NOTE]  
+> 搜尋遺失作品方法：Powerful Pixiv Downloader 下載後不要關閉，右鍵檢查>右鍵class="beautify_scrollbar logContent">Copy>Copy outerHTML，把內容儲存為 `data/pixiv.html`，處理完成後結果會輸出在 data/pixiv_retrieve.txt
 
 ## 進階設定
 - 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。
@@ -70,6 +72,7 @@ python3 run.py --no-view --no-retrieve -o local=/Users/leo/Pictures/downloads拷
 - [ ] retriever 自動擷取 HTML
 - [ ] retriever 支援無結構文件
 - [ ] retriever 支援 `gallery-dl` 一鍵下載
+- [ ] 同步功能支援 Windows ([cwrsync](https://www.cnblogs.com/michael9/p/11820919.html))
 - [ ] 整合 `magick`, `imageoptim` 後處理
 - [ ] 整合檔案自動識別標籤
 
@@ -83,7 +86,7 @@ P5D/
 ├── config
 │   └── config.toml            # 使用者定義設置
 ├── data/
-│   ├── pixiv.html             # 下載記錄，用於取回檔案
+│   ├── pixiv.html             # 下載記錄，用於尋回檔案
 │   ├── pixiv_retrieve.txt     # 檔案取回結果
 │   ├── rsync_log.log          # 同步日誌
 │   ├── system.log             # 系統日誌

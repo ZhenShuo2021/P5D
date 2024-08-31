@@ -17,7 +17,7 @@ class Formatter(argparse.RawTextHelpFormatter):
 
 
 def build_parser():
-    options_help = "其他選項\nrsync: rsync 參數\nlocal: local_path 路徑\nremote: remote_path 路徑\ncategory 處理指定分類"
+    options_help = "其他選項\nrsync: rsync 參數\nlocal: local_path 路徑\nremote: remote_path 路徑\ncategory: 處理指定分類"
     parser = argparse.ArgumentParser(
         description="P5D: Pixiv Post Processor for Powerful Pixiv Downloader",
         usage="%(prog)s [OPTION]... URL...",
