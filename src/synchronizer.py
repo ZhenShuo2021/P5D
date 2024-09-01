@@ -67,7 +67,7 @@ class FileSyncer:
         if not self.rsync_param:
             command = [
                 "rsync",
-                "-av",
+                "-aq",
                 "--ignore-existing",
                 "--progress",
                 f"--log-file={log_path}",
@@ -79,9 +79,8 @@ class FileSyncer:
             command = ["rsync", *rsync_options, f"{src}/", f"{dst}/"]
         self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
         try:
-            subprocess.run(
-                command, check=True, shell=True, capture_output=True, text=True, encoding="utf-8"
-            )
+            # Do not use shell=True
+            subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8")
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Synchronization failed: {e}")
 

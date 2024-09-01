@@ -52,8 +52,8 @@ class CategorizerAdapter:
         self.config_loader = config_loader
         self.logger = logger
         self.categorizers = {
-            "series": SeriesCategorizer(config_loader, logger),
-            "others": OthersCategorizer(config_loader, logger),
+            "series": TaggedCategorizer(config_loader, logger),
+            "others": UnTaggedCategorizer(config_loader, logger),
             "custom": CustomCategorizer(config_loader, logger),
         }
 
@@ -88,7 +88,7 @@ class CategorizerUI:
         self.config_loader = config_loader
         if not self.config_loader.config:
             self.config_loader.load_config()
-        base_path_local = config_loader.get_base_paths().get("local_path")
+        base_path_local = config_loader.get_base_paths().get("local_path", "")
         if not Path(base_path_local).exists():
             self.logger.error(f"Base path '{base_path_local}' does not exist.")
             raise FileNotFoundError(f"Base path '{base_path_local}' does not exist.")
@@ -117,12 +117,19 @@ class CategorizerUI:
             self.categorize(category)
 
 
-class SeriesCategorizer(CategorizerInterface):
+class TaggedCategorizer(CategorizerInterface):
     def categorize(self, category: str, preprocess: bool) -> None:
         base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
         tags = self.categorizes.get(category).get("tags")
         if preprocess:
-            batch_move(base_path, self.logger, self.categorizes.get(category).get("children"))
+            if category == "Others":
+                batch_move(self.logger, base_path, child_folders=[base_path.parent])
+            else:
+                batch_move(
+                    self.logger,
+                    base_path,
+                    child_folders=self.categorizes.get(category).get("children"),
+                )
 
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
@@ -135,7 +142,7 @@ class SeriesCategorizer(CategorizerInterface):
         move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter, self.logger)
 
 
-class OthersCategorizer(CategorizerInterface):
+class UnTaggedCategorizer(CategorizerInterface):
     EN = app_settings.EN
     JP = app_settings.JP
     Other = app_settings.Other
@@ -154,7 +161,7 @@ class OthersCategorizer(CategorizerInterface):
 
         if tags is not None:
             # Categorize files with tags if key "tags" exist.
-            self.other_path = base_path / tags.get(self.OTHERS_NAME, "others")
+            self.other_path = base_path / tags.get(self.OTHERS_NAME, "其他標籤")
             self.other_path.mkdir(exist_ok=True)
             move_all_tagged(
                 base_path.parent, self.other_path, tags, self.tag_delimiter, self.logger
@@ -206,6 +213,7 @@ def main():
     custom_logger.setup_logging(logging.DEBUG)
     logger = logging.getLogger(__name__)
     config_loader = ConfigLoader(logger)
+    config_loader.load_config()
 
     # Initialize categorizer
     file_categorizer = CategorizerUI(config_loader, logger)

@@ -5,7 +5,12 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
 from src.app_settings import EN, JP, Other
-from src.categorizer import CategorizerUI, CategorizerAdapter, SeriesCategorizer, OthersCategorizer
+from src.categorizer import (
+    CategorizerUI,
+    CategorizerAdapter,
+    TaggedCategorizer,
+    UnTaggedCategorizer,
+)
 from test.test_file_utils import ConfigLoaderTestBase
 
 
@@ -108,12 +113,11 @@ class TestCategorizerUI(ConfigLoaderTestBase):
             ui.categorize_all()
 
 
-class TestSeriesCategorizer(ConfigLoaderTestBase):
+class TestTaggedCategorizer(ConfigLoaderTestBase):
     def setUp(self):
         """Setup with handcraft files"""
         super().setUp()
-
-        self.categorizer = SeriesCategorizer(self.config_loader, self.mock_logger)
+        self.categorizer = TaggedCategorizer(self.config_loader, self.mock_logger)
 
     def tearDown(self):
         shutil.rmtree(self.root_dir)
@@ -122,16 +126,16 @@ class TestSeriesCategorizer(ConfigLoaderTestBase):
     def test_categorize_child(self):
         # Files of category 1: with child
         t = "text"
-        self.cat1_dir = Path(self.config_loader.get_combined_paths()["cat1"]["local_path"])
-        self.cat1_dir.mkdir(parents=True, exist_ok=True)
+        cat1_dir = Path(self.config_loader.get_combined_paths()["cat1"]["local_path"])
+        cat1_dir.mkdir(parents=True, exist_ok=True)
         child_list = self.config_loader.get_categories()["cat1"]["children"]
-        self.fn1 = "file1,tag1,notag1,tag2.jpg"
-        self.fn2 = "file2,tag4,notag1,tag5.jpg"
-        self.fn3 = "file3,notag,notag,notag.jpg"
-        self.cat1 = {self.fn1: t, self.fn2: t, self.fn3: t}
-        for filename in self.cat1.keys():
+        fn1 = "file1,tag1,notag1,tag2.jpg"
+        fn2 = "file2,tag4,notag1,tag5.jpg"
+        fn3 = "file3,notag,notag,notag.jpg"
+        cat1 = {fn1: t, fn2: t, fn3: t}
+        for filename in cat1.keys():
             random_child = random.choice(child_list)
-            file_dir = self.cat1_dir.parent / random_child
+            file_dir = cat1_dir.parent / random_child
             file_dir.mkdir(parents=True, exist_ok=True)
             file_path = file_dir / filename
             with open(file_path, "w") as f:
@@ -139,48 +143,86 @@ class TestSeriesCategorizer(ConfigLoaderTestBase):
         self.categorizer.categorize("cat1", preprocess=True)
 
         self.assertTrue(
-            (self.cat1_dir / "map1" / self.fn1).exists(),
-            f"File {self.fn1} not found in 'map1' directory",
+            (cat1_dir / "map1" / fn1).exists(),
+            f"File {fn1} not found in 'map1' directory",
         )
         self.assertTrue(
-            (self.cat1_dir / "others" / self.fn2).exists(),
-            f"File {self.fn2} not found in 'map4' directory",
+            (cat1_dir / "others" / fn2).exists(),
+            f"File {fn2} not found in 'map4' directory",
         )
         self.assertTrue(
-            (self.cat1_dir / "others" / self.fn3).exists(),
-            f"File {self.fn3} not found in 'others' directory",
+            (cat1_dir / "others" / fn3).exists(),
+            f"File {fn3} not found in 'others' directory",
         )
 
     def test_categorize_no_child(self):
         # Files of category 2: without child
         t = "text"
-        self.cat2_dir = Path(self.config_loader.get_combined_paths()["cat2"]["local_path"])
-        self.cat2_dir.mkdir(parents=True, exist_ok=True)
-        self.fn4 = "file4,tag1,notag1,tag2.jpg"
-        self.fn5 = "file5,tag4,notag1,tag5.jpg"
-        self.fn6 = "file6,notag,notag,notag.jpg"
-        self.cat2 = {self.fn4: t, self.fn5: t, self.fn6: t}
-        for filename in self.cat2.keys():
-            file_path = self.cat2_dir / filename
+        cat2_dir = Path(self.config_loader.get_combined_paths()["cat2"]["local_path"])
+        cat2_dir.mkdir(parents=True, exist_ok=True)
+        fn1 = "file1,tag1,notag1,tag2.jpg"
+        fn2 = "file2,tag4,notag1,tag5.jpg"
+        fn3 = "file3,notag,notag,notag.jpg"
+        cat2 = {fn1: t, fn2: t, fn3: t}
+        for filename in cat2.keys():
+            file_path = cat2_dir / filename
             with open(file_path, "w") as f:
                 f.write("test")
         self.categorizer.categorize("cat2", preprocess=False)
 
         self.assertTrue(
-            (self.cat2_dir / "others" / self.fn4).exists(),
-            f"File {self.fn4} not found in 'map1' directory",
+            (cat2_dir / "others" / fn1).exists(),
+            f"File {fn1} not found in 'map1' directory",
         )
         self.assertTrue(
-            (self.cat2_dir / "map4" / self.fn5).exists(),
-            f"File {self.fn5} not found in 'map4' directory",
+            (cat2_dir / "map4" / fn2).exists(),
+            f"File {fn2} not found in 'map4' directory",
         )
         self.assertTrue(
-            (self.cat2_dir / "others" / self.fn6).exists(),
-            f"File {self.fn6} not found in 'others' directory",
+            (cat2_dir / "others" / fn3).exists(),
+            f"File {fn3} not found in 'others' directory",
+        )
+
+    def test_categorize_others(self):
+        t = "text"
+        cat3_dir = Path(self.config_loader.get_combined_paths()["Others"]["local_path"])
+        Others_tag = {
+            "custom_setting": {
+                "Others": {
+                    "tags": {
+                        "nice_job": "好欸！",
+                        "114514": "id_ed25519",
+                    }
+                }
+            }
+        }
+        self.config_loader.update_config(Others_tag)
+        cat3_dir.mkdir(parents=True, exist_ok=True)
+        fn1 = "file1,tag1,notag1,tag2,nice_job.jpg"
+        fn2 = "file2,tag4,notag1,tag5,bad_job.jpg"
+        fn3 = "file3,notag,notag,notag,114514.jpg"
+        cat3 = {fn1: t, fn2: t, fn3: t}
+        for filename in cat3.keys():
+            file_path = cat3_dir / filename
+            with open(file_path, "w") as f:
+                f.write("test")
+        self.categorizer.categorize("Others", preprocess=False)
+
+        self.assertTrue(
+            (cat3_dir / "好欸！" / fn1).exists(),
+            f"File {fn1} not found in 'map1' directory",
+        )
+        self.assertTrue(
+            (cat3_dir / "others" / fn2).exists(),
+            f"File {fn2} not found in 'map4' directory",
+        )
+        self.assertTrue(
+            (cat3_dir / "id_ed25519" / fn3).exists(),
+            f"File {fn3} not found in 'others' directory",
         )
 
 
-class TestOthersCategorizer(ConfigLoaderTestBase):
+class TestUnTaggedCategorizer(ConfigLoaderTestBase):
     def setUp(self):
         """Setup with handcraft files"""
         super().setUp()
@@ -198,13 +240,13 @@ class TestOthersCategorizer(ConfigLoaderTestBase):
             with open(file_path, "w") as f:
                 f.write("test")
 
-        self.categorizer = OthersCategorizer(self.config_loader, self.mock_logger)
+        self.categorizer = UnTaggedCategorizer(self.config_loader, self.mock_logger)
 
     def tearDown(self):
         shutil.rmtree(self.root_dir)
         # pass
 
-    def test_categorize_child(self):
+    def test_categorize_name_entry(self):
         """Test Others category without custom tags."""
         self.categorizer.categorize("Others", preprocess=False)
 
@@ -224,10 +266,6 @@ class TestOthersCategorizer(ConfigLoaderTestBase):
             (self.cat1_dir / Other / self.fn4).exists(),
             f"File {self.fn4} not found in 'others' directory",
         )
-
-    def test_categorize_child(self):
-        """Test Others category with custom tags"""
-        pass
 
 
 if __name__ == "__main__":

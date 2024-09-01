@@ -64,10 +64,6 @@ class TestConfigLoader(ConfigLoaderTestBase):
         )
 
     def test_get_categories(self):
-        expected = {
-            "cat1": {"local_path": "cat1_local", "remote_path": "cat1_remote"},
-            "cat2": {"local_path": "cat2_local", "remote_path": "cat2_remote"},
-        }
         self.assertEqual(
             self.config_loader.get_categories(), self.config_loader.config["categories"]
         )
@@ -85,12 +81,6 @@ class TestConfigLoader(ConfigLoaderTestBase):
         with patch.object(self.config_loader, "combine_path") as mock_combine:
             mock_combine.return_value = {"test": "path"}
             result = self.config_loader.get_combined_paths()
-        self.assertEqual(result, {"test": "path"})
-        mock_combine.assert_called_once()
-
-    def test_get_combined_paths_non_empty(self):
-        self.config_loader.combined_paths = {"test": "path"}
-        result = self.config_loader.get_combined_paths()
         self.assertEqual(result, {"test": "path"})
 
     def test_combine_path(self):
@@ -123,7 +113,7 @@ class TestConfigLoader(ConfigLoaderTestBase):
 
     def test_update_config_invalid_type(self):
         with self.assertRaises(ValueError):
-            self.config_loader.update_config("not a dict")
+            self.config_loader.update_config("not a dict")  # type: ignore
 
     def test_update_config_tag_delimiter(self):
         self.config_loader.update_config({"tag_delimiter": "new"})

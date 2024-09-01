@@ -54,10 +54,13 @@ def safe_move_dir(src_folder: Path, dst_folder: Path, logger: logging.Logger) ->
 
 
 def batch_move(
-    parent_folder: Path, logger: logging.Logger, child_folders: Optional[list[str]] = None
+    logger: logging.Logger,
+    src_dir: Path,
+    dst_dir: Optional[Path] = None,
+    child_folders: Optional[list[Path]] = None,
 ) -> None:
-    # TODO: overload this function if no child_folders input. Default usage is normal batch move using safe_move_dir.
-    """Move all files in "child_folders" to "parent_folder".
+    # TODO: write doc
+    """Move all files in "child_folders" to "src_dir".
 
     By default, the child and the parent folders are in the same level:
         ├── parent
@@ -66,14 +69,17 @@ def batch_move(
         └── child_C
     If child_folders is an existing dir, directory move it to the parent folder.
     """
-    parent_folder.mkdir(exist_ok=True)
-    base_folder = parent_folder.parent
+    src_dir.mkdir(exist_ok=True)
 
-    if isinstance(child_folders, list):
+    if dst_dir is not None:
+        # Normal batch move if dst_dir is given
+        safe_move_dir(src_dir, dst_dir, logger)
+    elif isinstance(child_folders, list):
+        # Advance usage: batch move for a list of folders
         for child_name in child_folders:
-            child_path = parent_folder.parent / child_name
+            child_path = src_dir.parent / child_name
             if child_path.is_dir():
-                safe_move_dir(child_path, parent_folder, logger)
+                safe_move_dir(child_path, src_dir, logger)
                 if is_empty(child_path):
                     shutil.rmtree(str(child_path))
                     logger.info(f"Deleting empty child folder '{child_path}'.")
@@ -81,10 +87,6 @@ def batch_move(
                     logger.debug(f"'{child_path}' is not empty; deleting process canceled.")
             else:
                 logger.debug(f"Child folder '{child_path}' not exist.")
-
-    elif child_folders is None:
-        # Use normal batch move here
-        safe_move_dir(parent_folder, parent_folder, logger)
 
 
 def move_tagged(
@@ -228,19 +230,19 @@ class ConfigLoader:
             }
         return combined_paths
 
-    def update_config(self, options: dict[str, str]):
+    def update_config(self, options: dict[str, Any]):
         """Update configuration using a dictionary of options."""
         if not isinstance(options, dict):
             raise ValueError("Input must be a dictionary")
 
-        special_key = ["custom_setting", "rsync"]
+        # Define keys to write and their alias. For example, the key name should be categories, but
+        # category is ok.
         base = ["local", "remote", "local_path", "remote_path"]
         cat = ["category", "categories"]
+        special_key = ["custom_setting", "rsync"]
         special_key.extend(base)
         special_key.extend(cat)
         for key, value in options.items():
-            # local/remote: simply for user experience
-            # category: alias
 
             if key not in self.config and key not in special_key:
                 raise ValueError(f"Invalid key: {key}")
@@ -276,7 +278,8 @@ class ConfigLoader:
                     raise ValueError(f"{key} value must be a string")
                 self.config[key] = value
             else:
-                self.config[key] = value
+                # Overwrite a dict
+                self.config["categories"].update(options[key])
 
 
 if __name__ == "__main__":
