@@ -6,7 +6,7 @@
     "terminal.integrated.fontFamily": "monospace",
     "editor.fontFamily": "MesloLGS NF",
     "extensions.ignoreRecommendations": true, // 是否忽略顯示建議的套件
-    "files.trimTrailingWhitespace": true, // 儲存的時候，會幫你自動過濾多餘的空格
+    "files.trimTrailingWhitespace": false, // 儲存的時候，會幫你自動過濾多餘的空格
     "files.encoding": "utf8", // 設定預設編碼
     "files.autoGuessEncoding": false,
 
