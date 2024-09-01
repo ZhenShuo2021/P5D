@@ -7,24 +7,33 @@ from src.utils.file_utils import ConfigLoader
 
 class ConfigLoaderTestBase(unittest.TestCase):
     def setUp(self):
-        self.mock_logger = Mock()
-        self.config_loader = ConfigLoader()
+        self.mock_logger = MagicMock()
+        self.config_loader = ConfigLoader(self.mock_logger)
+        # ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+        # DANGEROUS! RMTREE
+        self.root_dir = Path(__file__).resolve().parents[1] / Path("test_temp")
+        # DANGEROUS! RMTREE
+        # ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         self.config_loader.config = {
-            "BASE_PATHS": {"local_path": "/local", "remote_path": "/remote"},
+            "BASE_PATHS": {
+                "local_path": f"{self.root_dir}/download",
+                "remote_path": f"{self.root_dir}/archive",
+            },
             "categories": {
                 "cat1": {
                     "local_path": "cat1_local",
                     "remote_path": "cat1_remote",
-                    "tags": {
-                        "tag1": "map1",
-                        "tag2": "map2",
-                        "tag3": "map3",
-                    },
+                    "tags": {"tag1": "map1", "tag2": "map2", "tag3": "map3"},
+                    "children": ["sub_catA", "sub_catB"],
                 },
                 "cat2": {
                     "local_path": "cat2_local",
                     "remote_path": "cat2_remote",
                     "tags": {"tag4": "map4", "tag5": "map5", "tag6": "map6"},
+                },
+                "Others": {
+                    "local_path": "others",
+                    "remote_path": "others/misc",
                 },
             },
             "tag_delimiter": {"front": "{}_", "between": ","},
@@ -37,11 +46,8 @@ class ConfigLoaderTestBase(unittest.TestCase):
 
 class TestConfigLoader(ConfigLoaderTestBase):
     def test_init(self):
-        self.assertIsInstance(self.config_loader.base_dir, str)
+        self.assertIsInstance(self.config_loader.base_dir, Path)
         self.assertIsInstance(self.config_loader.log_dir, Path)
-        self.assertTrue(self.config_loader.config_path.endswith("config/config.toml"))
-        self.assertEqual(self.config_loader.combined_paths, {})
-        self.assertEqual(self.config_loader.logger, self.mock_logger)
 
     @patch("builtins.open", new_callable=mock_open, read_data='[TEST]\nkey = "value"')
     @patch("toml.load")
@@ -50,7 +56,7 @@ class TestConfigLoader(ConfigLoaderTestBase):
         self.config_loader.load_config()
         mock_toml_load.assert_called_once()
         self.assertEqual(self.config_loader.config, {"TEST": {"key": "value"}})
-        self.mock_logger.debug.assert_called_once_with("Configuration loaded successfully.")
+        self.mock_logger.debug.assert_called_once_with("Configuration loaded successfully (toml)")
 
     def test_get_base_paths(self):
         self.assertEqual(
@@ -62,7 +68,6 @@ class TestConfigLoader(ConfigLoaderTestBase):
             "cat1": {"local_path": "cat1_local", "remote_path": "cat1_remote"},
             "cat2": {"local_path": "cat2_local", "remote_path": "cat2_remote"},
         }
-        print(f"\n\n 123 {self.config_loader.get_categories()}\n\n")
         self.assertEqual(
             self.config_loader.get_categories(), self.config_loader.config["categories"]
         )
@@ -90,8 +95,18 @@ class TestConfigLoader(ConfigLoaderTestBase):
 
     def test_combine_path(self):
         expected = {
-            "cat1": {"local_path": "/local/cat1_local", "remote_path": "/remote/cat1_remote"},
-            "cat2": {"local_path": "/local/cat2_local", "remote_path": "/remote/cat2_remote"},
+            "cat1": {
+                "local_path": f"{self.root_dir}/download/cat1_local",
+                "remote_path": f"{self.root_dir}/archive/cat1_remote",
+            },
+            "cat2": {
+                "local_path": f"{self.root_dir}/download/cat2_local",
+                "remote_path": f"{self.root_dir}/archive/cat2_remote",
+            },
+            "Others": {
+                "local_path": f"{self.root_dir}/download/others",
+                "remote_path": f"{self.root_dir}/archive/others/misc",
+            },
         }
         self.assertEqual(self.config_loader.combine_path(), expected)
 

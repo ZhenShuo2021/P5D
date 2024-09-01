@@ -40,7 +40,7 @@ WORK_DIR = "local_path"
 LOG_TEMP_EXT = ".logfile"
 
 # categorizer.py
-# Key name in config.toml of others
+# Dict key name in config.toml of others
 OTHERS_NAME = "others"
 # Folder name of OtherCategorizer
 EN = "EN Artist"

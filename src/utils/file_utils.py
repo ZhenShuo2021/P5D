@@ -53,7 +53,10 @@ def safe_move_dir(src_folder: Path, dst_folder: Path, logger: logging.Logger) ->
             safe_move(file_path, dst_folder / file_path.name, logger)
 
 
-def batch_move(parent_folder: Path, logger: logging.Logger, child_folders: list[str] = []) -> None:
+def batch_move(
+    parent_folder: Path, logger: logging.Logger, child_folders: Optional[list[str]] = None
+) -> None:
+    # TODO: overload this function if no child_folders input. Default usage is normal batch move using safe_move_dir.
     """Move all files in "child_folders" to "parent_folder".
 
     By default, the child and the parent folders are in the same level:
@@ -68,7 +71,7 @@ def batch_move(parent_folder: Path, logger: logging.Logger, child_folders: list[
 
     if isinstance(child_folders, list):
         for child_name in child_folders:
-            child_path = base_folder / child_name
+            child_path = parent_folder.parent / child_name
             if child_path.is_dir():
                 safe_move_dir(child_path, parent_folder, logger)
                 if is_empty(child_path):
@@ -79,8 +82,9 @@ def batch_move(parent_folder: Path, logger: logging.Logger, child_folders: list[
             else:
                 logger.debug(f"Child folder '{child_path}' not exist.")
 
-    elif isinstance(child_folders, Path) and child_folders.is_dir():
-        safe_move_dir(base_folder, parent_folder)
+    elif child_folders is None:
+        # Use normal batch move here
+        safe_move_dir(parent_folder, parent_folder, logger)
 
 
 def move_tagged(
@@ -163,9 +167,9 @@ def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remot
 
 class ConfigLoader:
     def __init__(self, logger: logging.Logger, config_path: str = "config/config.toml"):
-        base_dir = Path(__file__).resolve().parents[2]
-        self.log_dir = base_dir / OUTPUT_DIR
-        self.config_path: Path = base_dir / config_path
+        self.base_dir = Path(__file__).resolve().parents[2]
+        self.log_dir = self.base_dir / OUTPUT_DIR
+        self.config_path: Path = self.base_dir / config_path
         self.config = {}
         self.combined_paths: dict[str, dict[str, str]] = {}
         self.logger = logger
@@ -175,7 +179,7 @@ class ConfigLoader:
             try:
                 with open(self.config_path, "r", encoding="utf-8") as file:
                     self.config = toml.load(file)
-                    self.logger.debug("Configuration loaded successfully (toml).")
+                    self.logger.debug("Configuration loaded successfully (toml)")
             except Exception as e:
                 self.logger.error(f"Failed to load configuration: {e}")
                 raise
