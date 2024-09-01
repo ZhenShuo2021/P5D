@@ -1,13 +1,13 @@
 # P5D - Pixiv Post Processor of Powerful Pixiv Downloader
 [Powerful Pixiv Downloader](https://github.com/xuejianxianzun/PixivBatchDownloader) 的後處理腳本。
-解決 Powerful Pixiv Downloader 下載後資料夾亂成一團的問題，把作品依照分類的檔案再細分成各個標籤，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
+解決 Powerful Pixiv Downloader 下載資料夾混亂，需要手動整理的問題。把作品依照分類的檔案再細分成各個標籤，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
 
 ## 特色
 📁 分類：根據角色分類到不同資料夾  
 🔄 同步：上傳到 NAS  
 🔍 搜尋：到 danbooru 搜尋遺失的作品  
 📊 檢視：作品標籤比例  
-🌐 跨平台：支援 Mac/Windows，Linux 應該也可以
+🌐 跨平台：Windows/Mac/Linux 全平台支援！  
 
 ## 安裝
 需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 沒有 rsync，要用替代的 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
@@ -92,10 +92,10 @@ python3 run.py --no-view --no-retrieve -o local=/Users/leo/Pictures/downloads拷
 安裝 [MSVC](https://learn.microsoft.com/zh-tw/cpp/windows/latest-supported-vc-redist?view=msvc-170)
 - Failed to load configuration: Reserved escape sequence used  
 toml 中 `BASE_PATHS` 括弧改成單括弧 `'`
-- rsync warning: some files vanished before they could be transferred (code 24) returned non-zero exit status 24  
-路徑過長無法移動，在 win10 22h2 19045.3803 實測網路上修改路徑長度限制也沒用
+- rsync warning: some files vanished before they could be transferred (code 24)    
+路徑長度超過系統限制，在 win10 22h2 19045.3803 實測網路上修改路徑長度限制也沒用，別想了   
 - 檔案沒有成功分類  
-重新複製真實資料夾名稱到 config 中，問題原因是 `ブルーアーカイブ` 和 `ブルーアーカイブ` 編碼不同。
+重新複製實際下載資料夾名稱到 config 中，問題原因是 `ブルーアーカイブ` 和 `ブルーアーカイブ` 看起來一樣編碼卻不同。
 
 
 ### Roadmap
