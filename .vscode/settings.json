@@ -15,14 +15,27 @@
     // "files.autoSaveDelay": 500,
 
     // "workbench.colorTheme": "One Dark Pro", // 需安裝 One Dark Pro
+    "cSpell.words": [
+      "cext",
+      "cmap",
+      "cwrsync",
+      "Genshin",
+      "imageoptim",
+      "magick",
+      "MSVC",
+      "sysdm"
+    ],
     "editor.selectionClipboard": false, // 關閉滑鼠滾輪中鍵複製功能
     "editor.stickyScroll.enabled": true, // Sticky Scroll 預設是打開的
-
+    "ruff.enable": true,
+    "ruff.organizeImports": true,
+    "ruff.showNotifications": "onWarning",
+    "ruff.lint.args": ["--fix"],
     "[python]": {
       "editor.formatOnSave": true,
-      "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "cSpell.words": [
-        "cmap"
-    ],
+
+    "ruff.lineLength": 100,
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.typeCheckingMode": "standard",
 }

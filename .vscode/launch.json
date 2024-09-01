@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
@@ -13,11 +13,12 @@
             },
             "envFile": "${workspaceFolder}/.env",
             "args": [
-                "-v",
-                "--no-sync",
-                "--no-archive",
-                "-o",
-                "local=/Users/leo/Pictures/downloads拷貝3",
+                // "-v",
+                // "--no-sync",
+                // "--no-archive",
+                // "-o",
+                // "category=Others"
+                // "local=/Users/leo/Pictures/downloads拷貝3",
                 ]
         }
     ]
