@@ -82,6 +82,10 @@ remote_path = "others/喜多川海夢"
 [categories.Others]
 local_path = "others"
 remote_path = "others/雜圖"
+  # [categories.Others.tags]
+  # # 可選：也可以在其他資料夾中揀選特定標籤，若沒設定預設將依照作者首字符名稱分類檔案
+  # "Fate／GO,瑪修·基列萊特" = "讚啦"
+  # "朝食" = "二喝" 
 
 [tag_delimiter]
 front = "{}_"
