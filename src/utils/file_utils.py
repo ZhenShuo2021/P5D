@@ -6,7 +6,8 @@ from typing import Optional, Any
 
 import toml
 
-from src.config import OUTPUT_DIR
+from config.config import config as user_config
+from src.app_settings import OUTPUT_DIR
 from src import custom_logger
 from src.utils.string_utils import is_empty, is_system, split_tags
 
@@ -164,22 +165,30 @@ class ConfigLoader:
     def __init__(self, logger: logging.Logger, config_path: str = "config/config.toml"):
         base_dir = Path(__file__).resolve().parents[2]
         self.log_dir = base_dir / OUTPUT_DIR
-        self.config_path = base_dir / config_path
+        self.config_path: Path = base_dir / config_path
         self.config = {}
         self.combined_paths: dict[str, dict[str, str]] = {}
         self.logger = logger
 
     def load_config(self):
-        try:
-            with open(self.config_path, "r") as file:
-                self.config = toml.load(file)
-                self.logger.debug("Configuration loaded successfully.")
-        except Exception as e:
-            self.logger.error(f"Failed to load configuration: {e}")
-            raise
+        if self.config_path.suffix.lower() == ".toml":
+            try:
+                with open(self.config_path, "r", encoding="utf-8") as file:
+                    self.config = toml.load(file)
+                    self.logger.debug("Configuration loaded successfully (toml).")
+            except Exception as e:
+                self.logger.error(f"Failed to load configuration: {e}")
+                raise
+        else:
+            self.config = user_config
+            self.logger.debug("Configuration loaded successfully (py).")
 
     def get_base_paths(self):
-        return self.config.get("BASE_PATHS", {})
+        base_paths = self.config.get("BASE_PATHS", {})
+        return {
+            "local_path": rf"{base_paths.get('local_path', '')}",
+            "remote_path": rf"{base_paths.get('remote_path', '')}",
+        }
 
     def get_categories(self):
         return self.config.get("categories", {})

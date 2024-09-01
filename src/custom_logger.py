@@ -2,7 +2,7 @@
 import logging
 import os
 
-from src.config import OUTPUT_DIR
+from src.app_settings import OUTPUT_DIR
 
 
 class CustomFormatter(logging.Formatter):
@@ -54,8 +54,8 @@ def setup_logging(level, no_archive=False):
 
     # File handler
     if not no_archive:
-        os.makedirs(f"./{OUTPUT_DIR}", exist_ok=True)
-        file_handler = logging.FileHandler(f"./{OUTPUT_DIR}/system.log")
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        file_handler = logging.FileHandler(os.path.join(OUTPUT_DIR, "system.log"), encoding="utf-8")
         file_handler.setFormatter(plain_formatter)
         logging.getLogger().addHandler(file_handler)
 

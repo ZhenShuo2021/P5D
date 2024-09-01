@@ -7,7 +7,7 @@ import threading
 import requests
 from bs4 import BeautifulSoup
 
-from src import config, custom_logger
+from src import app_settings, custom_logger
 from src.utils.string_utils import color_text
 
 
@@ -17,13 +17,17 @@ progress_idx = 0
 
 def retrieve_artwork(logger) -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, "../", config.OUTPUT_DIR, f"{config.MISS_LOG}.html")
+    file_path = os.path.join(
+        base_dir, "../", app_settings.OUTPUT_DIR, f"{app_settings.MISS_LOG}.html"
+    )
     html_content = read_html(file_path)
     urls = extract_urls(html_content)
     # print(f"遺失作品數量：{len(urls)}")
 
-    found_posts, not_found_posts, take_down_posts = process_urls(config.SOURCE_URL, urls, logger)
-    output_path = f"./{config.OUTPUT_DIR}/{config.MISS_LOG}_retrieve.txt"
+    found_posts, not_found_posts, take_down_posts = process_urls(
+        app_settings.SOURCE_URL, urls, logger
+    )
+    output_path = f"./{app_settings.OUTPUT_DIR}/{app_settings.MISS_LOG}_retrieve.txt"
     export_txt(output_path, found_posts, not_found_posts, take_down_posts)
     logger.debug(f"Retrieving result written to '{output_path}'")
 

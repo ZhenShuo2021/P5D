@@ -1,9 +1,10 @@
 [BASE_PATHS]
+# Windows 系統路徑「務必只能用單引號」，MacOS/Linux 無限制
 local_path = "/Users/leo/Pictures/downloads拷貝/"
 remote_path = "/Users/leo/Downloads/dst/"
 
 [categories.BlueArchive]
-local_path = "ブルーアーカイブ"
+local_path = "ブルーアーカイブ"
 remote_path = "BlueArchive"
 
   [categories.BlueArchive.tags]
@@ -33,7 +34,7 @@ remote_path = "IdolMaster"
 children = [
   "アイドルマスターシャイニーカラーズ",
   "アイドルマスターシンデレラガールズ",
-  "アイドルマスター",
+  "アイドルマスター",
   "学園アイドルマスター"
 ]
 

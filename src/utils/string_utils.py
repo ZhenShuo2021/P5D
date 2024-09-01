@@ -1,3 +1,4 @@
+import re
 import string
 from pathlib import Path
 
@@ -36,6 +37,31 @@ def split_tags(file_name: str, tag_delimiter: dict) -> list[str]:
     if file_tags:
         file_tags[0] = file_tags[0].split(front_delim)[-1]
     return file_tags
+
+
+def normalize_path(path: str | Path) -> str:
+    """Convert path from Windows format to Unix format
+
+    See https://stackoverflow.com/a/67658259/26993682
+    """
+    path = str(path)
+    if "\\" in path:
+        path = normalize_disk(path)
+    return path
+
+
+def normalize_disk(path_in: str) -> str:
+    # r: raw string，反斜線不會被當作特殊字符處理
+    # ^: 字串開始
+    # (): 每個()都是一個捕獲群組
+    # ([A-Z]): 捕獲一個大寫字母
+    # ([A-Z]+): 捕獲任何大寫字母
+    # ([a-zA-Z]+): 捕獲任何字母
+    # cygdrive: cygwin 路徑格式
+    # \1 引用第一個捕獲群組
+    path_in = path_in.replace("\\", "/")
+    path_out = re.sub(r"^([A-Z]):/", lambda m: f"/cygdrive/{m.group(1).lower()}/", path_in)
+    return path_out + "/"
 
 
 def color_text(text: str, color: str = "", background: str = "", style: str = "") -> str:
@@ -81,3 +107,9 @@ def color_text(text: str, color: str = "", background: str = "", style: str = ""
     end_code = "\033[0m" if codes else ""
 
     return f"{start_code}{text}{end_code}"
+
+
+if __name__ == "__main__":
+    s = r"C:\path\to\here"
+    sn = normalize_path(s)
+    print(s, "\n", sn)

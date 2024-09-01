@@ -4,7 +4,7 @@ import logging
 import os
 from pathlib import Path
 
-from . import categorizer, config, option, retriever, synchronizer, viewer
+from . import app_settings, categorizer, option, retriever, synchronizer, viewer
 from .custom_logger import setup_logging
 from .utils import file_utils
 
@@ -38,6 +38,6 @@ def main():
         viewer.viewer_main(config_loader, logger)
 
     if not args.no_categorize:
-        file_count = file_utils.count_files(combined_paths, logger, config.WORK_DIR)
-        happy_msg = "這次新增了" if config.WORK_DIR == "local_path" else "遠端資料夾總共有"
+        file_count = file_utils.count_files(combined_paths, logger, app_settings.WORK_DIR)
+        happy_msg = "這次新增了" if app_settings.WORK_DIR == "local_path" else "遠端資料夾總共有"
         print(f"\033[32m{happy_msg}\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")

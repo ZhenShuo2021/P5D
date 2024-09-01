@@ -7,8 +7,8 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from src import config, custom_logger
-from src.config import STATS_FILE, WORK_DIR
+from src import app_settings, custom_logger
+from src.app_settings import STATS_FILE, WORK_DIR, FONT
 from src.utils.file_utils import ConfigLoader
 from src.utils.string_utils import color_text, is_system, split_tags
 
@@ -16,14 +16,14 @@ logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
 logging.getLogger("matplotlib.backends").setLevel(logging.CRITICAL)
 
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS"]
+plt.rcParams["font.sans-serif"] = [FONT]
 plt.rcParams["axes.unicode_minus"] = False
 
 
 def read_tag_counts(file_name: str) -> Counter:
-    file_name = "./" + config.OUTPUT_DIR + "/" + file_name + ".txt"
+    file_name = "./" + app_settings.OUTPUT_DIR + "/" + file_name + ".txt"
     tag_counts = Counter()
-    with open(file_name, "r") as file:
+    with open(file_name, "r", encoding="utf-8") as file:
         for line in file:
             tag, count = line.strip().split(":")
             tag_counts[tag] = int(count)
@@ -78,10 +78,12 @@ def plot_pie_chart(
             text.set_verticalalignment("bottom")
 
     plt.axis("equal")
-    plt.savefig(f"./{config.OUTPUT_DIR}/{output_file}", dpi=dpi, format="jpg", bbox_inches="tight")
+    plt.savefig(
+        f"./{app_settings.OUTPUT_DIR}/{output_file}", dpi=dpi, format="jpg", bbox_inches="tight"
+    )
     plt.close()
 
-    logger.debug(f"Pie plot written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}'")
+    logger.debug(f"Pie plot written to '{os.getcwd()}/{app_settings.OUTPUT_DIR}/{output_file}'")
 
 
 # tag
@@ -112,12 +114,14 @@ def count_tags(
     tag_counts = Counter(all_tags)
     sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
 
-    with open(f"./{config.OUTPUT_DIR}/{output_file}.txt", "w", encoding="utf-8") as f:
+    with open(f"./{app_settings.OUTPUT_DIR}/{output_file}.txt", "w", encoding="utf-8") as f:
         f.write(f"Total files: {total_files}\n")
         for tag, count in sorted_tags:
             f.write(f"{tag}: {count}\n")
 
-    logger.debug(f"Tag statistics written to '{os.getcwd()}/{config.OUTPUT_DIR}/{output_file}.txt'")
+    logger.debug(
+        f"Tag statistics written to '{os.getcwd()}/{app_settings.OUTPUT_DIR}/{output_file}.txt'"
+    )
 
 
 def viewer_main(config_loader: ConfigLoader, logger: logging.Logger, file_name: str = STATS_FILE):

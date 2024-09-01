@@ -8,7 +8,19 @@
 
 # System Variable Configuration
 
-# Global
+import platform
+
+USER_OS = platform.system()
+
+if USER_OS == "Windows":
+    FONT = "Microsoft YaHei"
+elif USER_OS == "Darwin":
+    # MacOS
+    FONT = "Arial Unicode MS"
+else:
+    FONT = "Arial Unicode MS"
+
+
 # Output directory of all files.
 OUTPUT_DIR = "data"
 
@@ -21,7 +33,7 @@ MISS_LOG = "pixiv"
 # Output file name.
 STATS_FILE = "tag_stats"
 # Working directory of statistic info. Also used in main.py. Option: [local_path, remote_path].
-WORK_DIR = "remote_path"
+WORK_DIR = "local_path"
 
 # logger.py
 # Extension of temp rsync log

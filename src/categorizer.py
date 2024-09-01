@@ -8,14 +8,14 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from src import config, custom_logger
+from src import app_settings, custom_logger
 from src.utils.file_utils import ConfigLoader, batch_move, move_all_tagged, safe_move
 from src.utils.string_utils import is_english, is_japanese, is_system
 
 
 # Do NOT change unless necessary
 class CategorizerInterface(ABC):
-    OTHERS_NAME = config.OTHERS_NAME
+    OTHERS_NAME = app_settings.OTHERS_NAME
 
     def __init__(self, config_loader: ConfigLoader, logger: logging.Logger):
         """Abstract base class for categorizers.
@@ -136,9 +136,9 @@ class SeriesCategorizer(CategorizerInterface):
 
 
 class OthersCategorizer(CategorizerInterface):
-    EN = config.EN
-    JP = config.JP
-    Other = config.Other
+    EN = app_settings.EN
+    JP = app_settings.JP
+    Other = app_settings.Other
     """Categorize files that are not in any category.
 
     By default, it categorizes files based on their names.
