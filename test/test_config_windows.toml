@@ -1,0 +1,50 @@
+[BASE_PATHS]
+# Would be overwrite for different OSs.
+local_path = 'C:\Users\leo\Pictures\downloads拷貝'
+remote_path = 'C:\Users\leo\Downloads\dst'
+
+[categories.BlueArchive]
+local_path = "ブルーアーカイブ"
+remote_path = "BlueArchive"
+
+  [categories.BlueArchive.tags]
+  "調月リオ" = "調月リオ"
+  "调月莉音" = "調月リオ"
+  "早瀬ユウカ" = "早瀬ユウカ"
+  "一之瀬アスナ" = "一之瀬アスナ"
+  "一之瀨亞絲娜(限定)" = "一之瀬アスナ"
+  "亞絲娜" = "一之瀬アスナ"
+
+[categories.IdolMaster]
+local_path = "IdolMaster"
+remote_path = "IdolMaster"
+children = [
+  "アイドルマスターシャイニーカラーズ",
+  "学園アイドルマスター"
+]
+
+  [categories.IdolMaster.tags]
+  "黛冬優子" = "黛冬優子"
+  "桑山千雪" = "桑山千雪"
+  "市川雛菜" = "市川雛菜"
+  "樋口円香" = "樋口円香"
+
+[categories.Marin]
+local_path = "喜多川海夢"
+remote_path = 'others\喜多川海夢'
+
+[categories.Others]
+local_path = "others"
+remote_path = 'others\雜圖'
+
+[tag_delimiter]
+front = "{}_"
+between = ","
+
+[file_type]
+type = ["jpg", "png", "webm"]
+
+[custom]
+# 覆蓋預設 rsync 參數
+# rsync = "-aAXHv --remove-source-files"
+
