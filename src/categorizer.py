@@ -36,12 +36,12 @@ class CategorizerInterface(ABC):
         pass
 
     @abstractmethod
-    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         """Preprocessing for folders. For example, create an 'other' folder."""
         pass
 
     @abstractmethod
-    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         """Helper function for categorize."""
         pass
 
@@ -108,12 +108,8 @@ class CategorizerUI:
             categorizer.categorize(category, preprocess)
 
     def categorize_all(self) -> None:
+        # Tackle infinite loop in ConfigLoader
         for category in self.categories:
-            if not category:
-                self.logger.critical(
-                    f"Category '{category}' not found, continue to prevent infinite loop."
-                )
-                continue
             self.categorize(category)
 
 
@@ -134,11 +130,15 @@ class TaggedCategorizer(CategorizerInterface):
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
 
-    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
+        if tags is None:
+            raise ValueError("Input tag error. Should be a dict.")
         self.other_path = base_path / tags.get(self.OTHERS_NAME, "others")
         self.other_path.mkdir(parents=True, exist_ok=True)
 
-    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
+        if tags is None:
+            raise ValueError("Input tag error. Should be a dict.")
         move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter, self.logger)
 
 
@@ -154,24 +154,11 @@ class UnTaggedCategorizer(CategorizerInterface):
 
     def categorize(self, category: str, preprocess: bool) -> None:
         base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
-        tags = self.categorizes.get(category).get("tags")
-        if preprocess:
-            # For files doesn't belong to any category, preprocess is always true.
-            pass
 
-        if tags is not None:
-            # Categorize files with tags if key "tags" exist.
-            self.other_path = base_path / tags.get(self.OTHERS_NAME, "其他標籤")
-            self.other_path.mkdir(exist_ok=True)
-            move_all_tagged(
-                base_path.parent, self.other_path, tags, self.tag_delimiter, self.logger
-            )
-        else:
-            # If key "tags" not exist, categorize with categorize_helper
-            self.prepare_folders(base_path, tags)
-            self.categorize_helper(base_path, tags)
+        self.prepare_folders(base_path, None)
+        self.categorize_helper(base_path, None)
 
-    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         self.folders = {
             "EN": base_path / self.EN,
             "JP": base_path / self.JP,
@@ -182,7 +169,9 @@ class UnTaggedCategorizer(CategorizerInterface):
                 folder.mkdir(parents=True, exist_ok=True)
                 self.logger.debug(f"Creates folder '{folder}'")
 
-    def categorize_helper(self, base_path: Path, tags: dict[str, str] | None = None) -> None:
+    def categorize_helper(
+        self, base_path: Path, tags: Optional[dict[str, str]] | None = None
+    ) -> None:
         for file_path in base_path.parent.iterdir():
             if file_path.is_file() and not is_system(file_path.name):
                 first_char = file_path.name[0]
@@ -199,10 +188,10 @@ class CustomCategorizer(CategorizerInterface):
     def categorize(self, category: str, preprocess: bool) -> None:
         pass
 
-    def prepare_folders(self, base_path: Path, tags: dict[str, str]) -> None:
+    def prepare_folders(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         pass
 
-    def categorize_helper(self, base_path: Path, tags: dict[str, str]) -> None:
+    def categorize_helper(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         pass
 
     def _helper_function(self) -> None:

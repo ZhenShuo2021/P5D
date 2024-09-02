@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import shutil
 from pathlib import Path
 from typing import Optional, Any
@@ -130,6 +131,7 @@ def move_all_tagged(
     logger: logging.Logger,
 ) -> None:
     """Move tagged file for all files."""
+    # Todo: Overload this function with a function input
     for file_path in base_path.rglob("*"):
         if file_path.is_file() and not is_system(file_path.name):
             file_name = file_path.stem
@@ -168,7 +170,7 @@ def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remot
 
 
 class ConfigLoader:
-    def __init__(self, logger: logging.Logger, config_path: str = "config/config.toml"):
+    def __init__(self, logger: logging.Logger, config_path: str | Path = "config/config.toml"):
         self.base_dir = Path(__file__).resolve().parents[2]
         self.log_dir = self.base_dir / OUTPUT_DIR
         self.config_path: Path = self.base_dir / config_path
@@ -181,6 +183,7 @@ class ConfigLoader:
             try:
                 with open(self.config_path, "r", encoding="utf-8") as file:
                     self.config = toml.load(file)
+                    self.config_check()
                     self.logger.debug("Configuration loaded successfully (toml)")
             except Exception as e:
                 self.logger.error(f"Failed to load configuration: {e}")
@@ -188,6 +191,11 @@ class ConfigLoader:
         else:
             self.config = user_config
             self.logger.debug("Configuration loaded successfully (py).")
+
+    def config_check(self):
+        if not all(self.config.get("categories", [])):
+            self.logger.error("TypeError: input an invalid type of category")
+            sys.exit(1)
 
     def get_base_paths(self):
         base_paths = self.config.get("BASE_PATHS", {})
@@ -280,6 +288,8 @@ class ConfigLoader:
             else:
                 # Overwrite a dict
                 self.config["categories"].update(options[key])
+
+        self.config_check()
 
 
 if __name__ == "__main__":

@@ -45,8 +45,8 @@ class FileSyncer:
     def sync_folders_all(self) -> None:
         combined_paths = self.config_loader.get_combined_paths()
         for key in combined_paths:
-            # Not using get method to prevent infinite loop
-            if not combined_paths[key]["local_path"]:
+            # Not use get method to prevent infinite loop
+            if not combined_paths.get(key, {}).get("local_path", {}):
                 self.logger.error(
                     f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop."
                 )
@@ -62,8 +62,8 @@ class FileSyncer:
         return os.path.join(str(log_dir), f"{os.path.basename(src)}{app_settings.LOG_TEMP_EXT}")
 
     def _run_rsync(self, src: str | Path, dst: str | Path, log_path: str | Path) -> None:
-        src = normalize_path(src)
-        dst = normalize_path(dst)
+        src = normalize_path(self.add_slash(src))
+        dst = normalize_path(self.add_slash(dst))
         if not self.rsync_param:
             command = [
                 "rsync",
@@ -76,8 +76,13 @@ class FileSyncer:
             ]
         else:
             rsync_options = self.rsync_param.split()
-            command = ["rsync", *rsync_options, f"{src}/", f"{dst}/"]
-        self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
+            command = [
+                "rsync",
+                *rsync_options,
+                f"{self.add_slash(src)}/",
+                f"{self.add_slash(dst)}/",
+            ]
+        self.logger.debug(f"Start Syncing '{self.add_slash(src)}' to '{self.add_slash(dst)}'.")
         try:
             # Do not use shell=True
             subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8")
@@ -91,6 +96,10 @@ class FileSyncer:
         # file_output = file_input.get("custom", {}).get("rsync", "")
         # combined_string = ",".join(file_output)
         return cmd_input.get("rsync", "") or file_input.get("rsync", "") or ""
+
+    def add_slash(self, path: str | Path) -> str:
+        path = rf"{str(path)}\\" if app_settings.USER_OS == "Windows" else f"{str(path)}/"
+        return path
 
 
 class LogMerger:
