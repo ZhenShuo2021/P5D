@@ -7,8 +7,7 @@ import threading
 import requests
 from bs4 import BeautifulSoup
 
-from src import app_settings, custom_logger
-from src.utils.string_utils import color_text
+from p5d import app_settings, custom_logger
 
 
 progress_lock = threading.Lock()

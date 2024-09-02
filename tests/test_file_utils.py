@@ -2,8 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, mock_open, patch, call
 
-from test.test_base import TestBase, TEST_LOCAL, TEST_REMOTE
-from src.utils.file_utils import ConfigLoader
+from tests.test_base import TestBase, TEST_LOCAL, TEST_REMOTE
+from p5d.utils import ConfigLoader
 
 
 class TestConfigLoader(TestBase):

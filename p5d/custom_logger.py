@@ -2,7 +2,7 @@
 import logging
 import os
 
-from src.app_settings import OUTPUT_DIR
+from p5d.app_settings import OUTPUT_DIR
 
 
 class CustomFormatter(logging.Formatter):

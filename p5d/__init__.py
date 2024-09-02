@@ -4,9 +4,9 @@ import logging
 import os
 from pathlib import Path
 
-from . import app_settings, categorizer, option, retriever, synchronizer, viewer
-from .custom_logger import setup_logging
-from .utils import file_utils
+from p5d import app_settings, categorizer, option, retriever, synchronizer, viewer
+from p5d.custom_logger import setup_logging
+import p5d.utils
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     setup_logging(args.loglevel, args.no_archive)
     logger = logging.getLogger(__name__)
 
-    config_loader = file_utils.ConfigLoader(logger)
+    config_loader = p5d.utils.ConfigLoader(logger)
     config_loader.load_config()
     config_loader.update_config(args.options)
     combined_paths = config_loader.get_combined_paths()
@@ -38,6 +38,6 @@ def main():
         viewer.viewer_main(config_loader, logger)
 
     if not args.no_categorize:
-        file_count = file_utils.count_files(combined_paths, logger, app_settings.WORK_DIR)
+        file_count = p5d.utils.count_files(combined_paths, logger, app_settings.WORK_DIR)
         happy_msg = "這次新增了" if app_settings.WORK_DIR == "local_path" else "遠端資料夾總共有"
         print(f"\033[32m{happy_msg}\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")

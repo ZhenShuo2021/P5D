@@ -8,9 +8,16 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from src import app_settings, custom_logger
-from src.utils.file_utils import ConfigLoader, batch_move, move_all_tagged, safe_move
-from src.utils.string_utils import is_english, is_japanese, is_system
+from p5d import app_settings, custom_logger
+from p5d.utils import (
+    ConfigLoader,
+    batch_move,
+    move_all_tagged,
+    safe_move,
+    is_english,
+    is_japanese,
+    is_system,
+)
 
 
 # Do NOT change unless necessary

@@ -7,10 +7,9 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from src import app_settings, custom_logger
-from src.app_settings import STATS_FILE, WORK_DIR, FONT
-from src.utils.file_utils import ConfigLoader
-from src.utils.string_utils import color_text, is_system, split_tags
+from p5d import app_settings, custom_logger
+from p5d.app_settings import STATS_FILE, WORK_DIR, FONT
+from p5d.utils import ConfigLoader, color_text, is_system, split_tags
 
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)

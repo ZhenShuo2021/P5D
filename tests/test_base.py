@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from unittest.mock import MagicMock, patch
-from src.utils.file_utils import ConfigLoader
+from p5d.utils import ConfigLoader
 
 USER_OS = platform.system()
 

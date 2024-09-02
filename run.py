@@ -1,4 +1,4 @@
-from src import main
+from p5d import main
 
 if __name__ == "__main__":
     main()

@@ -6,9 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src import app_settings, custom_logger
-from src.utils.file_utils import ConfigLoader
-from src.utils.string_utils import normalize_path
+from p5d import app_settings, custom_logger
+from p5d.utils import ConfigLoader, normalize_path
 
 
 class FileSyncer:
