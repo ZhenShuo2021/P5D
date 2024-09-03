@@ -151,9 +151,11 @@ class TaggedCategorizer(CategorizerInterface):
         # Move download_root/* to download/others/*
         if category == "Others":
             # The base_path of Others category is download/others/
-            for item in base_path.parent.iterdir():
-                if item.is_file() and not is_system(item):
-                    safe_move(str(item), str(base_path / item.name), self.logger)
+            extensions = self.config_loader.get_file_type()["type"]
+            files = [file for ext in extensions for file in base_path.parent.glob(f"*.{ext}")]
+            for file in files:
+                if file.is_file() and not is_system(file):
+                    safe_move(str(file), str(base_path / file.name), self.logger)
         else:
             for child in self.categorizes.get(category)["children"]:
                 child_path_src = base_path.parent / child
@@ -193,7 +195,9 @@ class UnTaggedCategorizer(CategorizerInterface):
     def categorize_helper(
         self, base_path: Path, tags: Optional[dict[str, str]] | None = None
     ) -> None:
-        for file_path in base_path.parent.iterdir():
+        extensions = self.config_loader.get_file_type()["type"]
+        files = [file for ext in extensions for file in base_path.parent.glob(f"*.{ext}")]
+        for file_path in files:
             if file_path.is_file() and not is_system(file_path.name):
                 first_char = file_path.name[0]
                 if is_english(first_char):

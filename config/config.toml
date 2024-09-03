@@ -92,7 +92,7 @@ front = "{}_"
 between = ","
 
 [file_type]
-type = ["jpg", "png", "webm"]
+type = ["jpg", "png", "webm", "gif", "apng", "zip"]
 
 [custom]
 # 覆蓋預設 rsync 參數

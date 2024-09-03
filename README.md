@@ -10,7 +10,7 @@
 🌐 跨平台：Windows/Mac/Linux 全平台支援！  
 
 ## 安裝
-需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 沒有 rsync，要用替代的 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
+需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 要版的rsync 是 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
 
 <details>
 <summary> cwrsync 設定 </summary>
@@ -47,7 +47,7 @@ pip install -r requirements.txt                     # 安裝依賴套件
 py 和 toml 是相同的，喜歡哪種就用哪種。
 
 > [!CAUTION]
-> 下載資料夾中第一層的檔案會全部被視為其他作品放進 others 資料夾。
+> 下載資料夾中第一層的所有圖片檔會被放進 others 資料夾。
 
 ## 使用
 Powerful Pixiv Downloader 下載完成後執行 `run.py`
@@ -84,7 +84,7 @@ python3 run.py --no-view --download -o local=/Users/leo/Pictures/downloads拷貝
 
 
 > [!NOTE]
-> 預設沒有不下載遺失作品，因為 [gallery-dl](https://github.com/mikf/gallery-dl) 提供更完善的功能。使用 `gallery-dl -I id_retrieve.txt` 可以一鍵下載所有檔案。
+> 預設不下載遺失作品因為 [gallery-dl](https://github.com/mikf/gallery-dl) 功能更完善。使用 `gallery-dl -I id_retrieve.txt` 可以一鍵下載。
 
 ## 進階設定
 - 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。  
