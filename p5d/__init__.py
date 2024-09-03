@@ -31,7 +31,7 @@ def main():
 
     if not args.no_retrieve:
         logger.info("開始尋找遺失作品...")
-        retriever.retrieve_artwork(logger)
+        retriever.retrieve_artwork(logger, args.download)
 
     if not args.no_view:
         logger.info("開始統計標籤...")

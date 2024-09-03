@@ -10,17 +10,18 @@ from typing import Optional, Any
 import requests
 from lxml import html
 
-from p5d import app_settings, custom_logger
+from p5d import custom_logger
+from p5d.app_settings import RETRIEVE_DIR, MISS_LOG, DANBOORU_SEARCH_URL
 
 
 progress_lock = threading.Lock()
 progress_idx = 0
 
 
-def retrieve_artwork(logger) -> None:
+def retrieve_artwork(logger, download=False) -> None:
     base_dir = Path(__file__).resolve().parent
-    file_path = base_dir.parent / app_settings.OUTPUT_DIR / f"{app_settings.MISS_LOG}.txt"
-    output_path = f"./{app_settings.OUTPUT_DIR}/{app_settings.MISS_LOG}_retrieve.txt"
+    file_path = base_dir.parent / RETRIEVE_DIR / f"{MISS_LOG}.txt"
+    output_path = f"./{RETRIEVE_DIR}/{MISS_LOG}_retrieve.txt"
 
     try:
         with open(file_path, "r", encoding="utf-8") as file:
@@ -40,6 +41,11 @@ def retrieve_artwork(logger) -> None:
     write_results_to_file(extract_values(results), output_path)
     logger.debug(f"Retrieving result written to '{output_path}'")
 
+    if download:
+        download_dir = base_dir / RETRIEVE_DIR
+        download_dir.mkdir(parents=True, exist_ok=True)
+        download_urls(output_path, base_dir, logger)
+
 
 def fetch_all(pixiv_ids, fetch_func, slow_number=150):
     results = {}
@@ -54,12 +60,12 @@ def fetch_all(pixiv_ids, fetch_func, slow_number=150):
                 if data:
                     results.update(data)
             except Exception as exc:
-                print(f"{pixiv_id} generated an exception: {exc}")
+                logger.error(f"{pixiv_id} generated an exception: {exc}")
     return results
 
 
 def danbooru(pixiv_id: str) -> dict[str, Any]:
-    url = app_settings.DANBOORU_SEARCH_URL.format(pixiv_id)
+    url = DANBOORU_SEARCH_URL.format(pixiv_id)
     result = {}
 
     try:
@@ -98,6 +104,91 @@ def danbooru_helper(pixiv_id: str, response: requests.Response):
         else:
             danbooru_result[pixiv_id] = "Error: No matching condition found"
     return danbooru_result
+
+
+def download_urls(file_path, base_dir, logger):
+    with open(file_path, "r+", encoding="utf-8") as file:
+        lines = file.readlines()
+        file.seek(0)  # 重置文件指針到文件開頭
+
+        for line in lines:
+            line = line.strip()
+            if not line.startswith("https://"):
+                file.write(line + "\n")
+                continue
+
+            try:
+                response = requests.get(line)
+                response.raise_for_status()
+
+                tree = html.fromstring(response.content)
+                size_element = tree.xpath('//li[@id="post-info-size"]')
+
+                if not size_element:
+                    logger.error(f"No size information found for URL: {line}")
+                    file.write(line + "\n")
+                    continue
+
+                download_url = size_element[0].xpath(
+                    './/a[contains(@href, "https://cdn.donmai.us/")]/@href'
+                )
+
+                if not download_url:
+                    logger.error(f"No download URL found for URL: {line}")
+                    file.write(line + "\n")
+                    continue
+
+                file_url = download_url[0]
+                file_ext = file_url.split("/")[-1].split(".")[-1]
+                file_name = "danbooru " + line.split("/")[-1] + "." + file_ext
+                file_path = base_dir.parent / RETRIEVE_DIR / file_name
+                if download_file(file_url, file_path, logger):
+                    # 如果下載成功，加上 "# " 前綴
+                    file.write(f"# {line}\n")
+                else:
+                    file.write(line + "\n")
+
+            except requests.exceptions.HTTPError as http_err:
+                logger.error(f"HTTP error occurred: {http_err}")
+                file.write(line + "\n")
+            except Exception as err:
+                logger.error(f"An error occurred: {err}")
+                file.write(line + "\n")
+
+
+def download_file(url, save_path, logger):
+    try:
+        download_with_speed_limit(url, save_path, speed_limit_kbps=1536)
+        logger.info(f"File successfully downloaded: '{save_path}'")
+        return True
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
+        return False
+    except Exception as err:
+        logger.error(f"An error occurred: {err}")
+        return False
+
+
+def download_with_speed_limit(url, save_path, speed_limit_kbps=1536):
+    chunk_size = 1024  # 1 KB
+    speed_limit_bps = speed_limit_kbps * 1024  # 轉換為 bytes per second
+
+    response = requests.get(url, stream=True)
+    response.raise_for_status()  # 確認請求成功
+
+    with open(save_path, "wb") as file:
+        start_time = time.time()
+        downloaded = 0
+
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            file.write(chunk)
+            downloaded += len(chunk)
+
+            elapsed_time = time.time() - start_time
+            expected_time = downloaded / speed_limit_bps
+
+            if elapsed_time < expected_time:
+                time.sleep(expected_time - elapsed_time)
 
 
 def extract_values(data):

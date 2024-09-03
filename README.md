@@ -5,7 +5,7 @@
 ## 特色
 📁 分類：根據角色分類到不同資料夾  
 🔄 同步：上傳到 NAS  
-🔍 搜尋：到 danbooru 搜尋遺失的作品  
+🔍 搜尋：到 danbooru 搜尋並且下載遺失的作品  
 📊 檢視：作品標籤比例  
 🌐 跨平台：Windows/Mac/Linux 全平台支援！  
 
@@ -64,6 +64,7 @@ options:
   --no-retrieve            關閉尋找遺失作品功能
   --no-view                關閉統計標籤功能
   --no-archive             關閉日誌功能
+  --download               尋回遺失作品後自動下載
   -q, --quiet              安靜模式
   -v, --verbose            偵錯模式
   -o, --options key=value  其他選項
@@ -73,13 +74,17 @@ options:
                            category: 處理指定分類
 ```
 
-使用範例：不統計標籤，不尋找遺失作品，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
+使用範例：不統計標籤，下載遺失作品，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
 ```sh
-python3 run.py --no-view --no-retrieve -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
+python3 run.py --no-view --download -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
 ```
 
 > [!NOTE]
-> 搜尋遺失作品方法：Powerful Pixiv Downloader 下載後不要關閉，右鍵檢查>右鍵class="beautify_scrollbar logContent">Copy>Copy outerHTML，把內容儲存為 `data/pixiv.html`，處理完成後結果會輸出在 data/pixiv_retrieve.txt
+> 搜尋遺失作品方法：Powerful Pixiv Downloader 下載後不要關閉，複製頁面最上方狀態欄的結果到 `data/retrieve/id.txt`。
+
+
+> [!NOTE]
+> 預設沒有不下載遺失作品，因為 [gallery-dl](https://github.com/mikf/gallery-dl) 提供更完善的功能。使用 `gallery-dl -I id_retrieve.txt` 可以一鍵下載所有檔案。
 
 ## 進階設定
 - 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。  
@@ -105,37 +110,3 @@ toml 中 `BASE_PATHS` 括弧改成單括弧 `'`
 - [x] 同步功能支援 Windows ([cwrsync](https://www.cnblogs.com/michael9/p/11820919.html))
 - [ ] 整合 `magick`, `imageoptim` 後處理
 - [ ] 整合檔案自動識別標籤
-
-
-### 架構
-```sh
-P5D/
-├── run.py                     # 入口程式
-├── README.md                  # 說明文件
-├── requirements.txt           # 需求套件
-├── config
-│   └── config.toml            # 使用者定義設置
-├── data/
-│   ├── pixiv.html             # 下載記錄，用於尋回檔案
-│   ├── pixiv_retrieve.txt     # 檔案取回結果
-│   ├── rsync_log.log          # 同步日誌
-│   ├── system.log             # 系統日誌
-│   ├── tag_stats.jpg          # 標籤統計圓餅圖
-│   └── tag_stats.txt          # 標籤統計結果
-├── src/
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── categorizer.py         # 檔案分類
-│   ├── config.py              # 系統參數
-│   ├── custom_logger.py       # 系統日誌
-│   ├── option.py              # 設置選項處理
-│   ├── retriever.py           # 搜尋遺失作品
-│   ├── synchronizer.py        # 同步到遠端儲存裝置
-│   ├── utils/
-│   │   ├── file_utils.py      # 檔案工具
-│   │   └── string_utils.py    # 字串工具
-│   └── viewer.py              # 標籤統計
-└── test/
-    ├── __init__.py
-    └── test_categorizer.py    # 檔案分類測試
-```

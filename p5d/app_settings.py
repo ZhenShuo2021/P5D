@@ -7,7 +7,7 @@
 # sys.path.insert(0, str(root))
 
 # System Variable Configuration
-
+import os
 import platform
 
 USER_OS = platform.system()
@@ -23,6 +23,7 @@ else:
 
 # Output directory of all files.
 OUTPUT_DIR = "data"
+RETRIEVE_DIR = os.path.join(OUTPUT_DIR, "retrieve")
 
 # Retriever.py
 # Source site for retrieve missing artwork

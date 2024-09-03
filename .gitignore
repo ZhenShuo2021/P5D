@@ -1,10 +1,11 @@
 # Custom
 data/*
-*temp*
-!data/pixiv.html
-!data/pixiv_retrieve.txt
+!data/retrieve
+data/retrieve/*
+!data/retrieve/*.txt
 .DS_Store
 activate
+*temp*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -29,6 +29,7 @@ def build_parser():
     parser.add_argument("--no-retrieve", action="store_true", help="關閉尋找遺失作品功能")
     parser.add_argument("--no-view", action="store_true", help="關閉統計標籤功能")
     parser.add_argument("--no-archive", action="store_true", help="關閉日誌功能")
+    parser.add_argument("--download", action="store_true", help="尋回遺失作品後自動下載")
     parser.add_argument(
         "-q", "--quiet", dest="loglevel", action="store_const", const=logging.ERROR, help="安靜模式"
     )
