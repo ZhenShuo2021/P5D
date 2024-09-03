@@ -1,7 +1,10 @@
+# Todo: Add more config check
 import logging
 import os
+import re
 import sys
 import shutil
+import string
 from pathlib import Path
 from typing import Optional, Any
 
@@ -11,8 +14,273 @@ from config.config import config as user_config
 from p5d.app_settings import OUTPUT_DIR
 from p5d import custom_logger
 
+HIRAGANA_START = "\u3040"
+HIRAGANA_END = "\u309f"
+KATAKANA_START = "\u30a0"
+KATAKANA_END = "\u30ff"
+
+
+class ConfigLoader:
+    """
+    Load and manage configuration from a file.
+
+    :param logger: A logging instance to use for logging messages.
+    :type logger: logging.Logger
+    :param config_path: Path to the configuration file, defaults to "config/config.toml".
+    :type config_path: str | Path, optional
+    """
+
+    def __init__(self, logger: logging.Logger, config_path: str | Path = "config/config.toml"):
+        """
+        Initializes the ConfigLoader with the given logger and configuration path.
+
+        :param logger: A logging instance to use for logging messages.
+        :type logger: logging.Logger
+        :param config_path: Path to the configuration file, defaults to "config/config.toml".
+        :type config_path: str | Path, optional
+        """
+        self.base_dir = Path(__file__).resolve().parents[1]
+        self.log_dir = self.base_dir / OUTPUT_DIR
+        self.config_path: Path = self.base_dir / config_path
+        self.config = {}
+        self.combined_paths: dict[str, dict[str, str]] = {}
+        self.logger = logger
+
+    def load_config(self):
+        """
+        Loads the configuration from the specified file and validates it.
+
+        :raises Exception: If an error occurs while loading or validating the configuration.
+        """
+        if self.config_path.suffix.lower() == ".toml":
+            try:
+                with open(self.config_path, "r", encoding="utf-8") as file:
+                    self.config = toml.load(file)
+                    self.config_check()
+                    self.logger.debug("Configuration loaded successfully (toml)")
+            except Exception as e:
+                self.logger.error(f"Failed to load configuration: {e}")
+                raise
+        else:
+            self.config = user_config
+            self.logger.debug("Configuration loaded successfully (py).")
+
+    def config_check(self):
+        """
+        Checks if the configuration contains valid categories.
+
+        This method verifies that the `categories` field in the configuration
+        is populated with valid values. If any of the categories are invalid
+        or missing, it logs an error message and terminates the program.
+
+        :Raises SystemExit: Exits the program with a status code of 1 if invalid categories are found.
+        """
+        if not all(self.config.get("categories", [])):
+            self.logger.error("TypeError: input an invalid type of category")
+            sys.exit(1)
+
+    def get_base_paths(self) -> dict[str, str]:
+        """
+        Retrieve the base paths for local and remote configurations.
+
+        This method fetches the `BASE_PATHS` from the configuration and returns a dictionary
+        containing the `local_path` and `remote_path`. If these paths are not specified,
+        empty strings are returned.
+
+        :return: A dictionary with `local_path` and `remote_path`.
+        """
+        base_paths = self.config.get("BASE_PATHS", {})
+        return {
+            "local_path": rf"{base_paths.get('local_path', '')}",
+            "remote_path": rf"{base_paths.get('remote_path', '')}",
+        }
+
+    def get_categories(self):
+        return self.config.get("categories", {})
+
+    def get_delimiters(self):
+        return self.config.get("tag_delimiter", {})
+
+    def get_file_type(self):
+        return self.config.get("file_type", {})
+
+    def get_log_dir(self) -> Path:
+        """
+        Returns the initialized log directory.
+
+        :return: A `Path` object directory.
+        """
+        return self.log_dir
+
+    def get_custom(self) -> dict[str, Any]:
+        """
+        Retrieve the custom configuration settings.
+
+        This method returns the value of the "custom" key from the configuration.
+        If the key is not present, it returns an empty dictionary.
+
+        :return: The custom configuration settings.
+        """
+        return self.config.get("custom", {})
+
+    def get_combined_paths(self) -> dict[str, dict[str, str]]:
+        """
+        Retrieves the combined path for each category.
+
+        If the path is not combined yet, execute self.combine_path to get the path.
+
+        :returns: A dictionary with keys `local_path` and `remote_path`
+        """
+        if not self.combined_paths:
+            self.combined_paths = self.combine_path()
+        return self.combined_paths
+
+    def combine_path(self) -> dict[str, dict[str, str]]:
+        """
+        Combine paths of base_paths and the categories
+
+        Combines the `local_path` and `remote_path` for each category. 
+        Used for quick access the file directory.
+
+        :return: A two-level dictionary with the first level key is category name, \
+            and the second level key is `local_path` and `remote_path`.
+        """
+        base_paths = self.get_base_paths()
+        categories = self.get_categories()
+        combined_paths = {}
+
+        for category, data in categories.items():
+            local_combined = os.path.join(base_paths["local_path"], data["local_path"])
+            remote_combined = os.path.join(base_paths["remote_path"], data["remote_path"])
+            combined_paths[category] = {
+                "local_path": local_combined,
+                "remote_path": remote_combined,
+            }
+        return combined_paths
+
+    def update_config(self, options: dict[str, Any]):
+        """
+        Updates the configuration with the provided options.
+
+        This method updates the `self.config` dictionary based on the given `options` dictionary.
+
+        :Example:
+        Python usage example
+        args.options = {
+            "local": "path/to/local",
+            "remote: "path/to/remote",
+            "categories": "category1, category2, category3",
+
+            # Develope option, temporary update a dict.
+            "custom_setting": {
+                "Others": {
+                    "tags": {
+                        "nice_job": "好欸！",
+                        "114514": "id_ed25519",
+                    }
+                }
+            }
+        }
+        >>> config_loader.load_config()
+        >>> config_loader.update_config(args.options)
+
+        Command line input example
+
+        - Overwrite local_path
+        >>> python -m p5d -o local=/Users/leo/Pictures/downloads
+
+        - Only process specified categories
+        >>> python -m p5d -o category="Marin, IdolMaster, Others"
+
+        - Overwrite rsync parameters. Note that the directory of rsync can not be overwrite here.
+        >>> python -m p5d -o rsync="--remove-source-files -avzd"
+
+        - Specify multiple config at once
+        >>> python3 -m p5d -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
+
+        :param options: A dictionary of configuration options to update.
+        :type options: dict[str, Any]
+
+        :raises ValueError: If the input is not a dictionary, if an invalid key is provided,
+                            or if a value for `tag_delimiter` or `file_type` is not a string.
+
+        :raises KeyError: If a key in `options` is not valid or is missing from the configuration.
+        """
+        if not isinstance(options, dict):
+            raise ValueError("Input must be a dictionary")
+
+        # Define keys to write and their alias. For example, the key name should be categories, but
+        # category is ok.
+        base = ["local", "remote", "local_path", "remote_path"]
+        cat = ["category", "categories"]
+        special_key = ["custom_setting", "rsync"]
+        special_key.extend(base)
+        special_key.extend(cat)
+        for key, value in options.items():
+            if key not in self.config and key not in special_key:
+                raise ValueError(f"Invalid key: {key}")
+
+            if key in base:
+                if "_path" in key:
+                    key = key.replace("_path", "")
+                self.config["BASE_PATHS"][f"{key}_path"] = value
+                self.logger.info(f"Input option '{key}' update successfully")
+
+            elif key in cat:
+                # Preprocess input
+                others_alias = ["Other", "others", "other"]
+                extract_value = split_options(value)
+                extract_value = [
+                    "Others" if value in others_alias else value for value in extract_value
+                ]
+
+                valid_categories = set()
+                for category in extract_value:
+                    if category in self.config["categories"]:
+                        valid_categories.add(category)
+                    else:
+                        self.logger.error(
+                            f"Input option '{category}' not found in {self.config_path}"
+                        )
+
+                categories_to_remove = set(self.config["categories"].keys()) - valid_categories
+                for category in categories_to_remove:
+                    self.config["categories"].pop(category, None)
+                self.logger.info(f"Input option '{key}' update successfully")
+
+            elif key in ["tag_delimiter", "file_type"]:
+                extract_value = split_options(value)
+                if key == "tag_delimiter":
+                    self.config[key]["front"] = extract_value[0]
+                    self.config[key]["between"] = extract_value[1]
+                else:
+                    self.config[key] = split_options(value)
+                self.logger.info(f"Input option '{key}' update successfully")
+
+            elif key == "custom_setting":
+                # Update a category (for dev)
+                self.config["categories"].update(options[key])
+                self.logger.info(f"Input option '{key}' update successfully")
+
+        self.config_check()
+
 
 def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
+    """
+    Safely moves a file or directory from the source to the destination.
+
+    This function moves a file or directory from `src` to `dst`, handling cases where
+    the destination already exists by renaming it. If the source does not exist or if
+    there are permission issues, appropriate errors are logged.
+
+    :param src: The source path to move.
+    :param dst: The destination path to move to.
+    :param logger: A logger instance used for logging errors and informational messages.
+
+    :raises FileNotFoundError: If the source path does not exist.
+    :raises PermissionError: If there is a permission issue during the move operation.
+    :raises Exception: For any other exceptions that occur during the move operation.
+    """
     if src == dst:
         return
 
@@ -20,8 +288,8 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
     dst_path = Path(dst)
 
     if not src_path.exists():
-        logger.error(f"Source '{src}' does not exist.")
-        raise FileNotFoundError(f"Source '{src}' does not exist.")
+        logger.info(f"Source '{src}' does not exist, skip this file move")
+        return
 
     logger.debug(f"Processing source file: {src}")
     try:
@@ -30,7 +298,7 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
                 dst_path = generate_unique_path(dst_path)
                 logger.info(f"Destination file already exists. It will be renamed to {dst_path}.")
             shutil.move(str(src_path), str(dst_path))
-            logger.debug(f"Successfully move file to {dst_path.parent}.")
+            logger.debug(f"Successfully move file to {dst_path}.")
         elif src_path.is_dir():
             if dst_path.exists():
                 logger.warning(
@@ -38,7 +306,7 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
                 )
                 dst_path = generate_unique_path(dst_path)
             shutil.move(str(src_path), str(dst_path))
-            logger.debug(f"Successfully move folder to {dst_path.parent}.")
+            logger.debug(f"Successfully move folder to {dst_path}.")
 
     except PermissionError:
         logger.error(f"Permission denied when moving '{src}' to '{dst}'.")
@@ -46,47 +314,34 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
         logger.error(f"Error occurred while moving '{src}' to '{dst}': {e}")
 
 
-def safe_move_dir(src_folder: Path, dst_folder: Path, logger: logging.Logger) -> None:
-    """Move the files in first level of src_folder to the dst_folder"""
-    for file_path in src_folder.iterdir():
-        if file_path.is_file() and not is_system(file_path.name):
-            safe_move(file_path, dst_folder / file_path.name, logger)
+def generate_unique_path(path: Path) -> Path:
+    counter = 1
+    stem = path.stem
+    suffix = path.suffix if path.is_file() else ""
+    parent = path.parent
+
+    new_path = parent / f"{stem}-{counter}{suffix}"
+    while new_path.exists():
+        counter += 1
+        new_path = parent / f"{stem}-{counter}{suffix}"
+
+    return new_path
 
 
-def batch_move(
+def move_all_tagged(
+    base_path: Path,
+    other_path: Path,
+    tags: dict[str, str],
+    tag_delimiter: dict[str, str],
     logger: logging.Logger,
-    src_dir: Path,
-    dst_dir: Optional[Path] = None,
-    child_folders: Optional[list[Path]] = None,
 ) -> None:
-    # TODO: write doc
-    """Move all files in "child_folders" to "src_dir".
-
-    By default, the child and the parent folders are in the same level:
-        ├── parent
-        ├── child_A
-        ├── child_B
-        └── child_C
-    If child_folders is an existing dir, directory move it to the parent folder.
-    """
-    src_dir.mkdir(exist_ok=True)
-
-    if dst_dir is not None:
-        # Normal batch move if dst_dir is given
-        safe_move_dir(src_dir, dst_dir, logger)
-    elif isinstance(child_folders, list):
-        # Advance usage: batch move for a list of folders
-        for child_name in child_folders:
-            child_path = src_dir.parent / child_name
-            if child_path.is_dir():
-                safe_move_dir(child_path, src_dir, logger)
-                if is_empty(child_path):
-                    shutil.rmtree(str(child_path))
-                    logger.info(f"Deleting empty child folder '{child_path}'.")
-                else:
-                    logger.debug(f"'{child_path}' is not empty; deleting process canceled.")
-            else:
-                logger.debug(f"Child folder '{child_path}' not exist.")
+    """Move tagged file for all files."""
+    # Todo: Overload this function with a function input
+    for file_path in base_path.rglob("*"):
+        if file_path.is_file() and not is_system(file_path.name):
+            file_name = file_path.stem
+            file_tags = split_tags(file_name, tag_delimiter)
+            move_tagged(base_path, other_path, file_path, file_tags, tags, logger)
 
 
 def move_tagged(
@@ -122,36 +377,6 @@ def get_tagged_path(base_path: Path, file_tags: list[str], tags: dict[str, str])
     return None
 
 
-def move_all_tagged(
-    base_path: Path,
-    other_path: Path,
-    tags: dict[str, str],
-    tag_delimiter: dict[str, str],
-    logger: logging.Logger,
-) -> None:
-    """Move tagged file for all files."""
-    # Todo: Overload this function with a function input
-    for file_path in base_path.rglob("*"):
-        if file_path.is_file() and not is_system(file_path.name):
-            file_name = file_path.stem
-            file_tags = split_tags(file_name, tag_delimiter)
-            move_tagged(base_path, other_path, file_path, file_tags, tags, logger)
-
-
-def generate_unique_path(path: Path) -> Path:
-    counter = 1
-    stem = path.stem
-    suffix = path.suffix if path.is_file() else ""
-    parent = path.parent
-
-    new_path = parent / f"{stem}-{counter}{suffix}"
-    while new_path.exists():
-        counter += 1
-        new_path = parent / f"{stem}-{counter}{suffix}"
-
-    return new_path
-
-
 def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remote_path") -> int:
     file_count = 0
 
@@ -168,138 +393,7 @@ def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remot
     return file_count
 
 
-class ConfigLoader:
-    def __init__(self, logger: logging.Logger, config_path: str | Path = "config/config.toml"):
-        self.base_dir = Path(__file__).resolve().parents[1]
-        self.log_dir = self.base_dir / OUTPUT_DIR
-        self.config_path: Path = self.base_dir / config_path
-        self.config = {}
-        self.combined_paths: dict[str, dict[str, str]] = {}
-        self.logger = logger
-
-    def load_config(self):
-        if self.config_path.suffix.lower() == ".toml":
-            try:
-                with open(self.config_path, "r", encoding="utf-8") as file:
-                    self.config = toml.load(file)
-                    self.config_check()
-                    self.logger.debug("Configuration loaded successfully (toml)")
-            except Exception as e:
-                self.logger.error(f"Failed to load configuration: {e}")
-                raise
-        else:
-            self.config = user_config
-            self.logger.debug("Configuration loaded successfully (py).")
-
-    def config_check(self):
-        if not all(self.config.get("categories", [])):
-            self.logger.error("TypeError: input an invalid type of category")
-            sys.exit(1)
-
-    def get_base_paths(self):
-        base_paths = self.config.get("BASE_PATHS", {})
-        return {
-            "local_path": rf"{base_paths.get('local_path', '')}",
-            "remote_path": rf"{base_paths.get('remote_path', '')}",
-        }
-
-    def get_categories(self):
-        return self.config.get("categories", {})
-
-    def get_delimiters(self):
-        return self.config.get("tag_delimiter", {})
-
-    def get_file_type(self):
-        return self.config.get("file_type", {})
-
-    def get_custom(self) -> dict[str, Any]:
-        return self.config.get("custom", {})
-
-    def get_combined_paths(self) -> dict[str, dict[str, str]]:
-        if not self.combined_paths:
-            self.combined_paths = self.combine_path()
-        return self.combined_paths
-
-    def get_log_dir(self) -> Path:
-        return self.log_dir
-
-    def combine_path(self) -> dict[str, dict[str, str]]:
-        base_paths = self.get_base_paths()
-        categories = self.get_categories()
-        combined_paths = {}
-
-        for category, data in categories.items():
-            local_combined = os.path.join(base_paths["local_path"], data["local_path"])
-            remote_combined = os.path.join(base_paths["remote_path"], data["remote_path"])
-            combined_paths[category] = {
-                "local_path": local_combined,
-                "remote_path": remote_combined,
-            }
-        return combined_paths
-
-    def update_config(self, options: dict[str, Any]):
-        """Update configuration using a dictionary of options."""
-        if not isinstance(options, dict):
-            raise ValueError("Input must be a dictionary")
-
-        # Define keys to write and their alias. For example, the key name should be categories, but
-        # category is ok.
-        base = ["local", "remote", "local_path", "remote_path"]
-        cat = ["category", "categories"]
-        special_key = ["custom_setting", "rsync"]
-        special_key.extend(base)
-        special_key.extend(cat)
-        for key, value in options.items():
-            if key not in self.config and key not in special_key:
-                raise ValueError(f"Invalid key: {key}")
-
-            if key in base:
-                if "_path" in key:
-                    key = key.replace("_path", "")
-                self.config["BASE_PATHS"][f"{key}_path"] = value
-                self.logger.debug(f"Input option '{key}' update successfully")
-            elif key in cat:
-                # Preprocess input
-                extract_value = value.split(",")
-                extract_value = [value.replace(" ", "") for value in extract_value]
-                extract_value = [
-                    "Others" if value in ["Other", "others", "other"] else value
-                    for value in extract_value
-                ]
-
-                valid_categories = set()
-                for category in extract_value:
-                    if category in self.config["categories"]:
-                        valid_categories.add(category)
-                    else:
-                        self.logger.error(
-                            f"Input option '{category}' not found in {self.config_path}"
-                        )
-
-                categories_to_remove = set(self.config["categories"].keys()) - valid_categories
-                for category in categories_to_remove:
-                    self.config["categories"].pop(category, None)
-            elif key in ["tag_delimiter", "file_type"]:
-                if not isinstance(value, str):
-                    raise ValueError(f"{key} value must be a string")
-                self.config[key] = value
-            else:
-                # Overwrite a dict
-                self.config["categories"].update(options[key])
-
-        self.config_check()
-
-
-import re
-import string
-from pathlib import Path
-
-HIRAGANA_START = "\u3040"
-HIRAGANA_END = "\u309f"
-KATAKANA_START = "\u30a0"
-KATAKANA_END = "\u30ff"
-
-
+## %
 def is_system(file_path: str | Path) -> bool:
     """Check if the file is a common system file based on its name."""
     common_system_files = {".DS_Store", "Thumbs.db", "desktop.ini"}
@@ -309,6 +403,8 @@ def is_system(file_path: str | Path) -> bool:
 def is_empty(file_path: str | Path) -> bool:
     # Check if any entry is a file that's not a system file or a directory that is not empty
     file_path = Path(file_path)
+    if not file_path.exists():
+        return False
     return not any(entry.is_dir() or not is_system(entry.name) for entry in file_path.iterdir())
 
 
@@ -329,6 +425,12 @@ def split_tags(file_name: str, tag_delimiter: dict) -> list[str]:
     if file_tags:
         file_tags[0] = file_tags[0].split(front_delim)[-1]
     return file_tags
+
+
+def split_options(value: str) -> list[str]:
+    extract_value = value.split(",")
+    extract_value = [value.replace(" ", "") for value in extract_value]
+    return extract_value
 
 
 def normalize_path(path: str | Path) -> str:

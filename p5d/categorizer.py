@@ -4,6 +4,7 @@
 # Todo: glob file type to conf.py
 # Todo: IPTC/EXIF writer
 import logging
+import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
@@ -11,12 +12,12 @@ from typing import Optional
 from p5d import app_settings, custom_logger
 from p5d.utils import (
     ConfigLoader,
-    batch_move,
     move_all_tagged,
     safe_move,
     is_english,
     is_japanese,
     is_system,
+    is_empty,
 )
 
 
@@ -125,17 +126,15 @@ class TaggedCategorizer(CategorizerInterface):
         base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
         tags = self.categorizes.get(category).get("tags")
         if preprocess:
-            if category == "Others":
-                batch_move(self.logger, base_path, child_folders=[base_path.parent])
-            else:
-                batch_move(
-                    self.logger,
-                    base_path,
-                    child_folders=self.categorizes.get(category).get("children"),
-                )
+            self.preprocess(base_path, category)
 
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
+        if self.categorizes.get(category).get("children"):
+            for child in self.categorizes.get(category)["children"]:
+                child_path_dst = base_path / child
+                if is_empty(child_path_dst):
+                    shutil.rmtree(child_path_dst)
 
     def prepare_folders(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         if tags is None:
@@ -147,6 +146,21 @@ class TaggedCategorizer(CategorizerInterface):
         if tags is None:
             raise ValueError("Input tag error. Should be a dict.")
         move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter, self.logger)
+
+    def preprocess(self, base_path: Path, category: str) -> None:
+        # Move download_root/* to download/others/*
+        if category == "Others":
+            # The base_path of Others category is download/others/
+            for item in base_path.parent.iterdir():
+                if item.is_file() and not is_system(item):
+                    safe_move(str(item), str(base_path / item.name), self.logger)
+        else:
+            for child in self.categorizes.get(category)["children"]:
+                child_path_src = base_path.parent / child
+                child_path_dst = base_path / child
+                safe_move(child_path_src, child_path_dst, self.logger)
+                if is_empty(child_path_dst):
+                    shutil.rmtree(child_path_dst)
 
 
 class UnTaggedCategorizer(CategorizerInterface):

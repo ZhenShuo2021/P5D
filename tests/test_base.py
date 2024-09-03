@@ -10,7 +10,7 @@ from p5d.utils import ConfigLoader
 USER_OS = platform.system()
 
 FONT = "Microsoft YaHei" if USER_OS == "Windows" else "Arial Unicode MS"
-CONFIG_FILE = "test_config_windows.toml" if USER_OS == "Windows" else "test_config_unix.toml"
+CONFIG_FILE = "test_config.toml"
 TEST_LOCAL = "test_local"
 TEST_REMOTE = "test_remote"
 
@@ -25,6 +25,20 @@ class TestBase(unittest.TestCase):
             "local_path": str(Path(__file__).resolve().parents[1] / TEST_LOCAL),
             "remote_path": str(Path(__file__).resolve().parents[1] / TEST_REMOTE),
         }
+        self.categories_path = {}
+        if USER_OS == "Windows":
+            self.categories_path = {
+                "custom_setting": {
+                    "Marin": {
+                        "local_path": "喜多川海夢",
+                        "remote_path": "others\喜多川海夢",
+                    },
+                    "Others": {
+                        "local_path": "others",
+                        "remote_path": "others\雜圖",
+                    },
+                },
+            }
         # ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         # DANGEROUS! RMTREE
         self.root_dir = Path(__file__).resolve().parents[1]

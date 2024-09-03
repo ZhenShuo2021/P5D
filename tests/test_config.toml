@@ -1,7 +1,7 @@
 [BASE_PATHS]
 # Would be overwrite for different OSs.
-local_path = 'C:\Users\leo\Pictures\downloads拷貝'
-remote_path = 'C:\Users\leo\Downloads\dst'
+local_path = "foo"
+remote_path = "foo"
 
 [categories.BlueArchive]
 local_path = "ブルーアーカイブ"
@@ -31,11 +31,11 @@ children = [
 
 [categories.Marin]
 local_path = "喜多川海夢"
-remote_path = 'others\喜多川海夢'
+remote_path = "others/喜多川海夢"
 
 [categories.Others]
 local_path = "others"
-remote_path = 'others\雜圖'
+remote_path = "others/雜圖"
 
 [tag_delimiter]
 front = "{}_"

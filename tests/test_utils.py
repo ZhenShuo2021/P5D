@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, mock_open, patch, call
 
 from tests.test_base import TestBase, TEST_LOCAL, TEST_REMOTE
-from p5d.utils import ConfigLoader
 
 
 class TestConfigLoader(TestBase):
@@ -11,6 +10,7 @@ class TestConfigLoader(TestBase):
         super().setUp()
         self.config_loader.load_config()
         self.config_loader.update_config(self.file_base)
+        self.config_loader.update_config(self.categories_path)
 
     @patch("builtins.open", new_callable=mock_open, read_data='[TEST]\nkey = "value"')
     @patch("toml.load")
@@ -21,15 +21,10 @@ class TestConfigLoader(TestBase):
         self.assertEqual(self.config_loader.config, {"TEST": {"key": "value"}})
 
     def test_load_debug(self):
-        # Unittest call template: called twice, as instance variable and private test.
-        expected_calls = [
-            call("Configuration loaded successfully (toml)"),
-            call("Input option 'local' update successfully"),
-            call("Input option 'remote' update successfully"),
-        ]
+        expected_calls = [call("Configuration loaded successfully (toml)")]
 
         self.mock_logger.debug.assert_has_calls(expected_calls)
-        self.assertEqual(self.mock_logger.debug.call_count, 3)
+        self.assertEqual(self.mock_logger.debug.call_count, 1)
 
     def test_get_base_paths(self):
         self.assertEqual(
@@ -88,12 +83,14 @@ class TestConfigLoader(TestBase):
             self.config_loader.update_config("not a dict")  # type: ignore
 
     def test_update_config_tag_delimiter(self):
-        self.config_loader.update_config({"tag_delimiter": "new"})
-        self.assertEqual(self.config_loader.config["tag_delimiter"], "new")
+        self.config_loader.update_config({"tag_delimiter": "new1, new2 "})
+        self.assertEqual(
+            self.config_loader.config["tag_delimiter"], {"front": "new1", "between": "new2"}
+        )
 
     def test_update_config_file_type(self):
-        self.config_loader.update_config({"file_type": "new"})
-        self.assertEqual(self.config_loader.config["file_type"], "new")
+        self.config_loader.update_config({"file_type": "new1, new2, new3"})
+        self.assertEqual(self.config_loader.config["file_type"], ["new1", "new2", "new3"])
 
 
 if __name__ == "__main__":

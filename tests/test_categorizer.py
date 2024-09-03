@@ -80,6 +80,7 @@ class TestCategorizerUI(TestBase):
         self.mock_adapter = Mock(spec=CategorizerAdapter)
         self.config_loader.load_config()
         self.config_loader.update_config(self.file_base)
+        self.config_loader.update_config(self.categories_path)
         self.cat1 = list(self.config_loader.get_categories())[0]
 
     @patch("pathlib.Path.exists", return_value=True)
@@ -171,6 +172,7 @@ class TestTaggedCategorizer(TestBase):
         super().setUp()
         self.config_loader.load_config()
         self.config_loader.update_config(self.file_base)
+        self.config_loader.update_config(self.categories_path)
         self.categorizer = TaggedCategorizer(self.config_loader, self.mock_logger)
 
     def tearDown(self):
@@ -265,6 +267,7 @@ class TestUnTaggedCategorizer(TestBase):
         super().setUp()
         self.config_loader.load_config()
         self.config_loader.update_config(self.file_base)
+        self.config_loader.update_config(self.categories_path)
         self.categorizer = UnTaggedCategorizer(self.config_loader, self.mock_logger)
         """Setup with handcraft files"""
         self.fn = [
