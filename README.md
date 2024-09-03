@@ -101,9 +101,7 @@ toml 中 `BASE_PATHS` 括弧改成單括弧 `'`
 ### Roadmap
 - [x] unittest
 - [ ] 優化遠端同步流程
-- [ ] retriever 自動擷取 HTML
-- [ ] retriever 支援無結構文件
-- [ ] retriever 支援 `gallery-dl` 一鍵下載
+- [x] retriever 支援 `gallery-dl` 一鍵下載
 - [x] 同步功能支援 Windows ([cwrsync](https://www.cnblogs.com/michael9/p/11820919.html))
 - [ ] 整合 `magick`, `imageoptim` 後處理
 - [ ] 整合檔案自動識別標籤

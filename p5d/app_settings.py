@@ -26,8 +26,9 @@ OUTPUT_DIR = "data"
 
 # Retriever.py
 # Source site for retrieve missing artwork
-SOURCE_URL = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
-MISS_LOG = "pixiv"
+DANBOORU_URL = "https://danbooru.donmai.us/"
+DANBOORU_SEARCH_URL = "https://danbooru.donmai.us/posts?tags=pixiv%3A{}&z=5"
+MISS_LOG = "id"
 
 # viewer.py
 # Output file name.
