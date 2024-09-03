@@ -3,6 +3,7 @@ data/*
 !data/retrieve
 data/retrieve/*
 !data/retrieve/*.txt
+id_dev*
 .DS_Store
 activate
 *temp*

@@ -107,9 +107,7 @@ class LogMerger:
         self.logger = logger
 
     def merge_logs(self) -> None:
-        output_file = self.log_dir / Path(
-            f"rsync_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
-        )
+        output_file = self.log_dir / Path("rsync.log")
         log_files = [f for f in os.listdir(self.log_dir) if f.endswith(app_settings.LOG_TEMP_EXT)]
 
         if not log_files:

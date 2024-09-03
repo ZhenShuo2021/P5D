@@ -15,13 +15,13 @@ from p5d.app_settings import RETRIEVE_DIR, MISS_LOG, DANBOORU_SEARCH_URL
 
 
 progress_lock = threading.Lock()
-progress_idx = 0
+progress_idx = -1
 
 
 def retrieve_artwork(logger, download=False) -> None:
-    base_dir = Path(__file__).resolve().parent
-    file_path = base_dir.parent / RETRIEVE_DIR / f"{MISS_LOG}.txt"
-    output_path = f"./{RETRIEVE_DIR}/{MISS_LOG}_retrieve.txt"
+    base_dir = Path(__file__).resolve().parents[1]
+    file_path = base_dir / RETRIEVE_DIR / f"{MISS_LOG}.txt"
+    output_path = Path(RETRIEVE_DIR) / f"{MISS_LOG}_retrieve.txt"
 
     try:
         with open(file_path, "r", encoding="utf-8") as file:
@@ -37,7 +37,7 @@ def retrieve_artwork(logger, download=False) -> None:
         elif not line.strip():
             continue
 
-    results = fetch_all(pixiv_ids, danbooru)
+    results = fetch_all(pixiv_ids, danbooru, logger)
     write_results_to_file(extract_values(results), output_path)
     logger.debug(f"Retrieving result written to '{output_path}'")
 
@@ -47,20 +47,28 @@ def retrieve_artwork(logger, download=False) -> None:
         download_urls(output_path, base_dir, logger)
 
 
-def fetch_all(pixiv_ids, fetch_func, slow_number=150):
+def fetch_all(pixiv_ids, fetch_func, logger, slow_number=100):
     results = {}
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(fetch_func, pixiv_id): pixiv_id for pixiv_id in pixiv_ids}
         for future in as_completed(futures):
             pixiv_id = futures[future]
+
+            if logger.getEffectiveLevel() > logging.DEBUG:
+                update_progress(len(pixiv_ids))
             try:
-                if len(pixiv_ids) > slow_number:
-                    time.sleep(random.uniform(0, 1.5))
+                if progress_idx > slow_number:
+                    time.sleep(random.uniform(0, 1.2))
                 data = future.result()
                 if data:
                     results.update(data)
             except Exception as exc:
                 logger.error(f"{pixiv_id} generated an exception: {exc}")
+
+    # Clean terminal
+    sys.stdout.write("\r")
+    sys.stdout.write("\033[K")
+    sys.stdout.flush()
     return results
 
 
@@ -109,7 +117,7 @@ def danbooru_helper(pixiv_id: str, response: requests.Response):
 def download_urls(file_path, base_dir, logger):
     with open(file_path, "r+", encoding="utf-8") as file:
         lines = file.readlines()
-        file.seek(0)  # 重置文件指針到文件開頭
+        file.seek(0)
 
         for line in lines:
             line = line.strip()
@@ -119,6 +127,7 @@ def download_urls(file_path, base_dir, logger):
 
             try:
                 response = requests.get(line)
+                time.sleep(1.5)
                 response.raise_for_status()
 
                 tree = html.fromstring(response.content)
@@ -141,7 +150,7 @@ def download_urls(file_path, base_dir, logger):
                 file_url = download_url[0]
                 file_ext = file_url.split("/")[-1].split(".")[-1]
                 file_name = "danbooru " + line.split("/")[-1] + "." + file_ext
-                file_path = base_dir.parent / RETRIEVE_DIR / file_name
+                file_path = base_dir / RETRIEVE_DIR / file_name
                 if download_file(file_url, file_path, logger):
                     # 如果下載成功，加上 "# " 前綴
                     file.write(f"# {line}\n")
@@ -222,6 +231,13 @@ def write_results_to_file(data, filename):
 
         for key, values in data["posts error"].items():
             file.write(f"# {key} retrieve error: {values}\n")  # 輸出 pixiv id
+
+
+def update_progress(jobs):
+    global progress_idx
+    with progress_lock:
+        progress_idx += 1
+        print_progress(progress_idx, jobs)
 
 
 def print_progress(idx: int, total_urls: int, width: int = 50) -> None:

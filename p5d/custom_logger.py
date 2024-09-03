@@ -55,7 +55,7 @@ def setup_logging(level, no_archive=False):
     # File handler
     if not no_archive:
         os.makedirs(OUTPUT_DIR, exist_ok=True)
-        file_handler = logging.FileHandler(os.path.join(OUTPUT_DIR, "system.log"), encoding="utf-8")
+        file_handler = logging.FileHandler(os.path.join(OUTPUT_DIR, "p5d.log"), encoding="utf-8")
         file_handler.setFormatter(plain_formatter)
         logging.getLogger().addHandler(file_handler)
 
