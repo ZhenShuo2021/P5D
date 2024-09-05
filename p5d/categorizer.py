@@ -9,21 +9,22 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from p5d import app_settings, custom_logger
+from p5d import custom_logger
+from p5d.app_settings import OTHERS_NAME, EN, JP, OTHER
 from p5d.utils import (
     ConfigLoader,
     move_all_tagged,
+    traverse_dir,
     safe_move,
     is_english,
     is_japanese,
-    is_system,
     is_empty,
 )
 
 
 # Do NOT change unless necessary
 class CategorizerInterface(ABC):
-    OTHERS_NAME = app_settings.OTHERS_NAME
+    OTHERS_NAME = OTHERS_NAME
 
     def __init__(self, config_loader: ConfigLoader, logger: logging.Logger):
         """Abstract base class for categorizers.
@@ -33,7 +34,7 @@ class CategorizerInterface(ABC):
           logger: Instance of LogManager to handle logging.
         """
         self.config_loader = config_loader
-        self.categorizes = config_loader.get_categories()
+        self.categories = config_loader.get_categories()
         self.combined_paths = config_loader.get_combined_paths()
         self.tag_delimiter = config_loader.get_delimiters()
         self.logger = logger
@@ -124,14 +125,14 @@ class CategorizerUI:
 class TaggedCategorizer(CategorizerInterface):
     def categorize(self, category: str, preprocess: bool) -> None:
         base_path = Path(self.combined_paths.get(category, {}).get("local_path", ""))
-        tags = self.categorizes.get(category).get("tags")
+        tags = self.categories.get(category).get("tags")
         if preprocess:
             self.preprocess(base_path, category)
 
         self.prepare_folders(base_path, tags)
         self.categorize_helper(base_path, tags)
-        if self.categorizes.get(category).get("children"):
-            for child in self.categorizes.get(category)["children"]:
+        if self.categories.get(category).get("children"):
+            for child in self.categories.get(category)["children"]:
                 child_path_dst = base_path / child
                 if is_empty(child_path_dst):
                     shutil.rmtree(child_path_dst)
@@ -145,19 +146,17 @@ class TaggedCategorizer(CategorizerInterface):
     def categorize_helper(self, base_path: Path, tags: Optional[dict[str, str]]) -> None:
         if tags is None:
             raise ValueError("Input tag error. Should be a dict.")
-        move_all_tagged(base_path, self.other_path, tags, self.tag_delimiter, self.logger)
+        move_all_tagged(base_path, tags, self.tag_delimiter, self.logger)
 
     def preprocess(self, base_path: Path, category: str) -> None:
         # Move download_root/* to download/others/*
         if category == "Others":
             # The base_path of Others category is download/others/
-            extensions = self.config_loader.get_file_type()["type"]
-            files = [file for ext in extensions for file in base_path.parent.glob(f"*.{ext}")]
-            for file in files:
-                if file.is_file() and not is_system(file):
-                    safe_move(str(file), str(base_path / file.name), self.logger)
+            ext = self.config_loader.get_file_type()["type"]
+            for file_path in traverse_dir(base_path.parent, recursive=False, extensions=ext):
+                safe_move(str(file_path), str(base_path / file_path.name), self.logger)
         else:
-            for child in self.categorizes.get(category)["children"]:
+            for child in self.categories.get(category)["children"]:
                 child_path_src = base_path.parent / child
                 child_path_dst = base_path / child
                 safe_move(child_path_src, child_path_dst, self.logger)
@@ -166,9 +165,9 @@ class TaggedCategorizer(CategorizerInterface):
 
 
 class UnTaggedCategorizer(CategorizerInterface):
-    EN = app_settings.EN
-    JP = app_settings.JP
-    Other = app_settings.Other
+    EN = EN
+    JP = JP
+    Other = OTHER
     """Categorize files that are not in any category.
 
     By default, it categorizes files based on their names.
@@ -192,21 +191,17 @@ class UnTaggedCategorizer(CategorizerInterface):
                 folder.mkdir(parents=True, exist_ok=True)
                 self.logger.debug(f"Creates folder '{folder}'")
 
-    def categorize_helper(
-        self, base_path: Path, tags: Optional[dict[str, str]] | None = None
-    ) -> None:
-        extensions = self.config_loader.get_file_type()["type"]
-        files = [file for ext in extensions for file in base_path.parent.glob(f"*.{ext}")]
-        for file_path in files:
-            if file_path.is_file() and not is_system(file_path.name):
-                first_char = file_path.name[0]
-                if is_english(first_char):
-                    folder_name = self.folders["EN"]
-                elif is_japanese(first_char):
-                    folder_name = self.folders["JP"]
-                else:
-                    folder_name = self.folders["Other"]
-                safe_move(file_path, folder_name / file_path.name, self.logger)
+    def categorize_helper(self, base_path: Path, tags: Optional[dict[str, str]] = None) -> None:
+        ext = self.config_loader.get_file_type()["type"]
+        for file_path in traverse_dir(base_path.parent, recursive=False, extensions=ext):
+            first_char = file_path.name[0]
+            if is_english(first_char):
+                folder_name = self.folders["EN"]
+            elif is_japanese(first_char):
+                folder_name = self.folders["JP"]
+            else:
+                folder_name = self.folders["Other"]
+            safe_move(file_path, folder_name / file_path.name, self.logger)
 
 
 class CustomCategorizer(CategorizerInterface):

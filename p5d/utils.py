@@ -6,8 +6,7 @@ import sys
 import shutil
 import string
 from pathlib import Path
-from typing import Optional, Any
-
+from typing import Optional, Any, Callable, Iterable
 import toml
 
 from config.config import config as user_config
@@ -268,18 +267,6 @@ class ConfigLoader:
 def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
     """
     Safely moves a file or directory from the source to the destination.
-
-    This function moves a file or directory from `src` to `dst`, handling cases where
-    the destination already exists by renaming it. If the source does not exist or if
-    there are permission issues, appropriate errors are logged.
-
-    :param src: The source path to move.
-    :param dst: The destination path to move to.
-    :param logger: A logger instance used for logging errors and informational messages.
-
-    :raises FileNotFoundError: If the source path does not exist.
-    :raises PermissionError: If there is a permission issue during the move operation.
-    :raises Exception: For any other exceptions that occur during the move operation.
     """
     if src == dst:
         return
@@ -294,17 +281,25 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
     logger.debug(f"Processing source file: {src}")
     try:
         if src_path.is_file():
-            if dst_path.exists():
-                dst_path = generate_unique_path(dst_path)
-                logger.info(f"Destination file already exists. It will be renamed to {dst_path}.")
+            if not dst_path.parent.exists():
+                dst_path.parent.mkdir(parents=True)
+            else:
+                if dst_path.exists():
+                    dst_path = generate_unique_path(dst_path)
+                    logger.info(
+                        f"Destination file already exists. It will be renamed to {dst_path}."
+                    )
             shutil.move(str(src_path), str(dst_path))
             logger.debug(f"Successfully move file to {dst_path}.")
         elif src_path.is_dir():
-            if dst_path.exists():
-                logger.warning(
-                    f"Destination directory '{dst_path}' already exists. It will be renamed."
-                )
-                dst_path = generate_unique_path(dst_path)
+            if not dst_path.parent.exists():
+                dst_path.parent.mkdir(parents=True)
+            else:
+                if dst_path.exists():
+                    logger.warning(
+                        f"Destination directory '{dst_path}' already exists. It will be renamed."
+                    )
+                    dst_path = generate_unique_path(dst_path)
             shutil.move(str(src_path), str(dst_path))
             logger.debug(f"Successfully move folder to {dst_path}.")
 
@@ -328,53 +323,86 @@ def generate_unique_path(path: Path) -> Path:
     return new_path
 
 
+def traverse_dir(
+    base_path: str | Path,
+    file_filter: Callable[[Path], bool] = lambda _: True,
+    exclude_system_files: bool = True,
+    extensions: Optional[list[str]] = None,
+    recursive: bool = True,
+) -> Iterable[Path]:
+    """
+    Traverse through files in a folder and perform operations on them.
+
+    Parameters
+    ----------
+    base_path
+        The starting point for searching files.
+    file_filter
+        Function to determine if a file is valid (default is always valid).
+    exclude_system_files
+        Whether to skip system files (default is True).
+    exclude_extensions
+        List of file extensions to exclude (default is None).
+    recursive
+        Whether to search subdirectories recursively (default is True).
+
+    Yields
+    ------
+    Path
+        Files that meet all criteria.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>>
+    >>> def process_file(file_path: Path):
+    >>>     print(f"Processing file: {file_path}")
+    >>>
+    >>> # Define file filter
+    >>> def is_txt_file(file_path: Path) -> bool:
+    >>>     return file_path.suffix.lower() == '.txt'
+    >>>
+    >>> base_path = "/path/to/dir"
+    >>> extensions = ["tmp", "log"]
+    >>> for file_path in traverse_folder(base_path, file_filter=is_txt_file, exclude_extensions=extensions):
+    >>>     process_file(file_path)
+    """
+    base_path = Path(base_path)
+    if extensions:
+        extensions = [f".{ext.lstrip('.')}" for ext in extensions]
+
+    search_method = base_path.rglob if recursive else base_path.glob
+
+    for file_path in search_method("*"):
+        if file_path.is_file() and file_filter(file_path):
+            if exclude_system_files and is_system(file_path.name):
+                continue
+            if extensions and file_path.suffix not in extensions:
+                continue
+            yield file_path
+
+
 def move_all_tagged(
     base_path: Path,
-    other_path: Path,
     tags: dict[str, str],
     tag_delimiter: dict[str, str],
     logger: logging.Logger,
 ) -> None:
     """Move tagged file for all files."""
-    # Todo: Overload this function with a function input
-    for file_path in base_path.rglob("*"):
-        if file_path.is_file() and not is_system(file_path.name):
-            file_name = file_path.stem
-            file_tags = split_tags(file_name, tag_delimiter)
-            move_tagged(base_path, other_path, file_path, file_tags, tags, logger)
-
-
-def move_tagged(
-    base_path: Path,
-    other_path: Path,
-    file_path: Path,
-    file_tags: list[str],
-    tags: dict[str, str],
-    logger: logging.Logger,
-) -> None:
-    """Move tagged file for a single file. Search the first file tag in tags and move it to target_folder.
-
-    base_path: File destination. In configuration: BASE_PATHS / CATEGORIES.BlueArchive.remote
-    other_path: File destination for which is not in any tag.
-    file_path: File source.
-    file_tags: Tags extract from file name.
-    tags: Special tags for file name. In configuration: CATEGORIES.BlueArchive.tags
-    """
-    target_folder = get_tagged_path(base_path, file_tags, tags)
-    if target_folder:
+    for file_path in traverse_dir(base_path):
+        file_name = file_path.stem
+        file_tags = split_tags(file_name, tag_delimiter)
+        target_folder = get_tagged_path(base_path, file_tags, tags)
         safe_move(file_path, target_folder / file_path.name, logger)
-    else:
-        safe_move(file_path, other_path / file_path.name, logger)
 
 
-def get_tagged_path(base_path: Path, file_tags: list[str], tags: dict[str, str]) -> Optional[Path]:
+def get_tagged_path(base_path: Path, file_tags: list[str], target_tags: dict[str, str]) -> Path:
     """Return the target folder path based on the file tags."""
     for tag in file_tags:
-        if tag in tags:
-            target_folder = Path(base_path) / tags[tag]
-            target_folder.mkdir(parents=True, exist_ok=True)
+        if tag in target_tags:
+            target_folder = base_path / target_tags[tag]
             return target_folder
-    return None
+    return base_path / target_tags.get("others", "其他標籤")
 
 
 def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remote_path") -> int:
@@ -386,9 +414,8 @@ def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remot
             logger.error(f"FileNotFoundError: '{path}' does not exist or not a directory.")
         logger.debug(f"Counting number of files of '{path}'.")
 
-        for file_path in path.rglob("*"):
-            if file_path.is_file() and not is_system(file_path):
-                file_count += 1
+        for _ in traverse_dir(path, recursive=True):
+            file_count += 1
 
     return file_count
 
