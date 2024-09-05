@@ -5,7 +5,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Callable
 
 import requests
 from lxml import html
@@ -18,47 +18,45 @@ progress_lock = threading.Lock()
 progress_idx = -1
 
 
-def retrieve_artwork(logger, download=False) -> None:
+def retrieve_artwork(logger: logging.Logger, download: bool = False) -> None:
     base_dir = Path(__file__).resolve().parents[1]
     file_path = base_dir / RETRIEVE_DIR / f"{MISS_LOG}.txt"
     output_path = Path(RETRIEVE_DIR) / f"{MISS_LOG}_retrieve.txt"
-
+    suffix = " 404 not found\n"
     try:
         with open(file_path, "r", encoding="utf-8") as file:
-            file_lines = file.readlines()
+            pixiv_ids = [line.rstrip(suffix) for line in file if line.endswith(suffix)]
+        results = fetch_all(pixiv_ids, danbooru, logger)
+        write_retrieve_results(results, output_path)
+        logger.debug(f"Retrieving result written to '{output_path}'")
+
     except FileNotFoundError:
         logger.info(f"Artwork list file '{file_path}' not found, continue to next step")
-        return
-
-    pixiv_ids = []
-    for line in file_lines:
-        if line.endswith(" 404 not found\n"):
-            pixiv_ids.append(line.rstrip(" 404 not found\n"))
-        elif not line.strip():
-            continue
-
-    results = fetch_all(pixiv_ids, danbooru, logger)
-    write_results_to_file(extract_values(results), output_path)
-    logger.debug(f"Retrieving result written to '{output_path}'")
 
     if download:
         download_dir = base_dir / RETRIEVE_DIR
         download_dir.mkdir(parents=True, exist_ok=True)
-        download_urls(output_path, base_dir, logger)
+        danbooru_downloader(output_path, base_dir, logger)
 
 
-def fetch_all(pixiv_ids, fetch_func, logger, slow_number=100):
+def fetch_all(
+    pixiv_ids: list[str],
+    fetch_func: Callable,
+    logger: logging.Logger,
+    max_workers: int = 5,
+) -> dict[str, str]:
     results = {}
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(fetch_func, pixiv_id): pixiv_id for pixiv_id in pixiv_ids}
+    max_workers = 32 if max_workers > 32 else max_workers
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(fetch_func, pixiv_id, logger): pixiv_id for pixiv_id in pixiv_ids
+        }
         for future in as_completed(futures):
             pixiv_id = futures[future]
 
             if logger.getEffectiveLevel() > logging.DEBUG:
                 update_progress(len(pixiv_ids))
             try:
-                if progress_idx > slow_number:
-                    time.sleep(random.uniform(0, 1.2))
                 data = future.result()
                 if data:
                     results.update(data)
@@ -72,49 +70,86 @@ def fetch_all(pixiv_ids, fetch_func, logger, slow_number=100):
     return results
 
 
-def danbooru(pixiv_id: str) -> dict[str, Any]:
+def danbooru(
+    pixiv_id: str, logger: logging.Logger, retry: int = 5, sleep_time: int = 5
+) -> dict[str, str]:
     url = DANBOORU_SEARCH_URL.format(pixiv_id)
-    result = {}
+    response = retry_request(url, logger, retry, sleep_time)
 
+    if response.status_code != 200:
+        return {pixiv_id: f"HTTPS connection error with code {response.status_code}"}
+
+    return danbooru_fetcher(pixiv_id, response)
+
+
+def retry_request(
+    url: str, logger: logging.Logger, retries: int, sleep_time: int
+) -> requests.Response:
+    response = requests.Response()
+    response.status_code = 500  # Default to an error status code
     try:
-        response = requests.get(url)
-        if response.status_code != 200:
-            result[pixiv_id] = f"Error: HTTP {response.status_code}"
-            return result
-        result = danbooru_helper(pixiv_id, response)
-
+        for attempt in range(retries):
+            response = requests.get(url, stream=True)
+            # Break if success (200), go to next iteration if (429), leave if any error.
+            if response.status_code == 200:
+                break
+            elif response.status_code == 429:
+                time.sleep(sleep_time)
+                logger.info(
+                    f"Rate limit exceeded for {url}. Sleeping for {sleep_time}s. Attempt {attempt + 1}/{retries}."
+                )
+            else:
+                logger.error(f"Failed fetching for {url} with code {response.status_code}")
+                break
+            logger.error(f"Failed to retrieve URL after {retries} attempts: '{url}'")
     except requests.RequestException as e:
-        result[pixiv_id] = f"Error: {str(e)}"
-    return result
+        logger.error(f"Failed to retrieve '{url}': {e}")
+
+    return response
 
 
-def danbooru_helper(pixiv_id: str, response: requests.Response):
-    danbooru_result = {}
+def danbooru_fetcher(pixiv_id: str, response: requests.Response) -> dict[str, str]:
+    """
+    Extract the response to get the artwork status.
+
+    This function extract the response.text to resolve the artwork status. Four types of artwork
+    status is defined in this function: `No posts found`, `Hidden posts`, `Found` and `No matching`.
+
+    :return:
+    """
+    fetch_result = {}
     tree = html.fromstring(response.text)
 
     posts_div = tree.xpath('//div[@id="posts"]')
     if not posts_div:
-        danbooru_result[pixiv_id] = "Error: <div id='posts'> not found"
-        return danbooru_result
+        fetch_result[pixiv_id] = "Error: <div id='posts'> not found"
+        return fetch_result
     posts_div = posts_div[0]
 
     # 沒有找到posts: 搜尋<p>內容為No posts found
     if posts_div.xpath('.//p[text()="No posts found."]'):
-        danbooru_result[pixiv_id] = "No posts found."
+        fetch_result[pixiv_id] = "No posts found."
     # 隱藏的posts: 搜尋<div>
     elif posts_div.xpath('.//div[@class="fineprint hidden-posts-notice"]'):
-        danbooru_result[pixiv_id] = "Hidden posts"
+        fetch_result[pixiv_id] = "Hidden posts"
     # 找到特定的article: 搜尋<article>中id鍵值以 "post_"開頭
     else:
         articles = posts_div.xpath('.//article[starts-with(@id, "post_")]')
         if articles:
-            danbooru_result[pixiv_id] = [article.get("id").split("_")[1] for article in articles]
+            fetch_result[pixiv_id] = [article.get("id").split("_")[1] for article in articles]
         else:
-            danbooru_result[pixiv_id] = "Error: No matching condition found"
-    return danbooru_result
+            fetch_result[pixiv_id] = "Error: No matching condition found"
+    return fetch_result
 
 
-def download_urls(file_path, base_dir, logger):
+def danbooru_downloader(file_path: Path, base_dir: Path, logger: logging.Logger) -> None:
+    """
+    Download danbooru file with given file with urls.
+    """
+    if not file_path.exists():
+        logger.error(f"File '{file_path}' not found, stop downloading")
+        return
+
     with open(file_path, "r+", encoding="utf-8") as file:
         lines = file.readlines()
         file.seek(0)
@@ -165,7 +200,12 @@ def download_urls(file_path, base_dir, logger):
                 file.write(line + "\n")
 
 
-def download_file(url, save_path, logger):
+def download_file(url: str, save_path: Path, logger: logging.Logger) -> bool:
+    """
+    Error control subfunction for download files.
+
+    Return `True` for successful download, else `False`.
+    """
     try:
         download_with_speed_limit(url, save_path, speed_limit_kbps=1536)
         logger.info(f"File successfully downloaded: '{save_path}'")
@@ -178,7 +218,12 @@ def download_file(url, save_path, logger):
         return False
 
 
-def download_with_speed_limit(url, save_path, speed_limit_kbps=1536):
+def download_with_speed_limit(url: str, save_path: Path, speed_limit_kbps: int = 1536) -> None:
+    """
+    Download with speed limit function.
+
+    Default speed limit is 1536 KBps (1.5 MBps).
+    """
     chunk_size = 1024  # 1 KB
     speed_limit_bps = speed_limit_kbps * 1024  # 轉換為 bytes per second
 
@@ -200,40 +245,33 @@ def download_with_speed_limit(url, save_path, speed_limit_kbps=1536):
                 time.sleep(expected_time - elapsed_time)
 
 
-def extract_values(data):
-    result = {"posts found": {}, "no posts found": [], "posts hidden": [], "posts error": {}}
-
-    for key, value in data.items():
-        if isinstance(value, list):
-            result["posts found"][key] = value  # 儲存鍵和對應的值
-        elif value == "No posts found.":
-            result["no posts found"].append(key)  # 只記錄鍵
-        elif value == "Hidden posts":
-            result["posts hidden"].append(key)  # 只記錄鍵
-        else:
-            result["posts error"][key] = value
-    return result
-
-
-def write_results_to_file(data, filename):
+def write_retrieve_results(data: dict[str, str], filename: Path):
     base_url = "https://danbooru.donmai.us/posts/"
-    with open(filename, "w") as file:
-        for key, values in data["posts found"].items():
-            file.write(f"# {key}\n")  # 輸出 pixiv id
-            for post_id in values:
-                file.write(f"{base_url}{post_id}\n")
+    with open(filename, "w", encoding="utf-8") as file:
+        # Write list values first
+        for key, value in data.items():
+            if isinstance(value, list):
+                file.write(f"# {key}\n")
+                for post_id in value:
+                    file.write(f"{base_url}{post_id}\n")
 
-        for post_id in data["posts hidden"]:
-            file.write(f"# {post_id} Hidden posts\n")
+        # Write "no posts found" entries
+        for key, value in data.items():
+            if value == "No posts found.":
+                file.write(f"# {key} No posts found\n")
 
-        for post_id in data["no posts found"]:
-            file.write(f"# {post_id} No posts found\n")
+        # Write "hidden posts" entries
+        for key, value in data.items():
+            if value == "Hidden posts":
+                file.write(f"# {key} Hidden posts\n")
 
-        for key, values in data["posts error"].items():
-            file.write(f"# {key} retrieve error: {values}\n")  # 輸出 pixiv id
+        # Write "retrieve error" entries
+        for key, value in data.items():
+            if not isinstance(value, list) and value not in ["No posts found.", "Hidden posts"]:
+                file.write(f"# {key} retrieve error: {value}\n")
 
 
-def update_progress(jobs):
+def update_progress(jobs: int) -> None:
     global progress_idx
     with progress_lock:
         progress_idx += 1

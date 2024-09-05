@@ -1,5 +1,5 @@
 # 98000908
 # https://danbooru.donmai.us/posts/5314113
-# 100383268 Hidden posts
 # 105616025 No posts found
-# 98000908980009089800090898000908 retrieve error: Error: HTTP 500
+# 100383268 Hidden posts
+# 98000908980009089800090898000908 retrieve error: HTTPS connection error with code 500
