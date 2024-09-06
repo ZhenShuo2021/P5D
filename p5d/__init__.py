@@ -1,4 +1,4 @@
-# src/__init__.py
+# p5d/__init__.py
 
 import logging
 import os
@@ -22,8 +22,7 @@ def main():
 
     if not args.no_categorize:
         logger.info("開始分類檔案...")
-        file_categorizer = categorizer.CategorizerUI(config_loader, logger)
-        file_categorizer.categorize()
+        categorizer.categorize_files(config_loader, True, logger)
 
     if not args.no_sync:
         logger.info("開始同步檔案...")

@@ -23,56 +23,41 @@ class ConfigLoader:
     """
     Load and manage configuration from a file.
 
-    :param logger: A logging instance to use for logging messages.
-    :type logger: logging.Logger
-    :param config_path: Path to the configuration file, defaults to "config/config.toml".
-    :type config_path: str | Path, optional
+    Args:
+        logger (logging.Logger): A logging instance to use for logging messages.
+        config_path (str | Path, optional): Path to the configuration file, defaults to "config/config.toml".
     """
 
     def __init__(self, logger: logging.Logger, config_path: str | Path = "config/config.toml"):
         """
         Initializes the ConfigLoader with the given logger and configuration path.
 
-        :param logger: A logging instance to use for logging messages.
-        :type logger: logging.Logger
-        :param config_path: Path to the configuration file, defaults to "config/config.toml".
-        :type config_path: str | Path, optional
+        Args:
+            logger (logging.Logger): A logging instance to use for logging messages.
+            config_path (str | Path, optional): Path to the configuration file, defaults to "config/config.toml".
         """
         self.base_dir = Path(__file__).resolve().parents[1]
-        self.log_dir = self.base_dir / OUTPUT_DIR
         self.config_path: Path = self.base_dir / config_path
         self.config = {}
         self.combined_paths: dict[str, dict[str, str]] = {}
         self.logger = logger
 
     def load_config(self):
-        """
-        Loads the configuration from the specified file and validates it.
-
-        :raises Exception: If an error occurs while loading or validating the configuration.
-        """
-        if self.config_path.suffix.lower() == ".toml":
-            try:
-                with open(self.config_path, "r", encoding="utf-8") as file:
-                    self.config = toml.load(file)
-                    self.config_check()
-                    self.logger.debug("Configuration loaded successfully (toml)")
-            except Exception as e:
-                self.logger.error(f"Failed to load configuration: {e}")
-                raise
-        else:
-            self.config = user_config
-            self.logger.debug("Configuration loaded successfully (py).")
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as file:
+                self.config = toml.load(file)
+                self.config_check()
+                self.logger.debug("Configuration loaded successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to load configuration: {e}")
+            raise
 
     def config_check(self):
         """
         Checks if the configuration contains valid categories.
 
-        This method verifies that the `categories` field in the configuration
-        is populated with valid values. If any of the categories are invalid
-        or missing, it logs an error message and terminates the program.
-
-        :Raises SystemExit: Exits the program with a status code of 1 if invalid categories are found.
+        Raises:
+            SystemExit: Exits the program with a status code of 1 if invalid categories are found.
         """
         if not all(self.config.get("categories", [])):
             self.logger.error("TypeError: input an invalid type of category")
@@ -80,55 +65,42 @@ class ConfigLoader:
 
     def get_base_paths(self) -> dict[str, str]:
         """
-        Retrieve the base paths for local and remote configurations.
+        Return the base paths for local and remote configurations.
 
-        This method fetches the `BASE_PATHS` from the configuration and returns a dictionary
-        containing the `local_path` and `remote_path`. If these paths are not specified,
-        empty strings are returned.
-
-        :return: A dictionary with `local_path` and `remote_path`.
+        Returns:
+            BASE_PATHS: A dictionary with `local_path` and `remote_path`.
         """
-        base_paths = self.config.get("BASE_PATHS", {})
-        return {
-            "local_path": rf"{base_paths.get('local_path', '')}",
-            "remote_path": rf"{base_paths.get('remote_path', '')}",
-        }
+        return self.config.get("BASE_PATHS", {})
 
-    def get_categories(self):
+    def get_categories(self) -> dict[str, dict]:
         return self.config.get("categories", {})
 
-    def get_delimiters(self):
+    def get_delimiters(self) -> dict[str, str]:
         return self.config.get("tag_delimiter", {})
 
-    def get_file_type(self):
+    def get_file_type(self) -> dict[str, list[str]]:
         return self.config.get("file_type", {})
 
-    def get_log_dir(self) -> Path:
-        """
-        Returns the initialized log directory.
-
-        :return: A `Path` object directory.
-        """
-        return self.log_dir
+    def get_output_dir(self) -> Path:
+        return self.base_dir / OUTPUT_DIR
 
     def get_custom(self) -> dict[str, Any]:
         """
-        Retrieve the custom configuration settings.
+        Get the custom configuration settings.
 
-        This method returns the value of the "custom" key from the configuration.
-        If the key is not present, it returns an empty dictionary.
-
-        :return: The custom configuration settings.
+        Returns:
+            dict: The custom configuration settings.
         """
         return self.config.get("custom", {})
 
     def get_combined_paths(self) -> dict[str, dict[str, str]]:
         """
-        Retrieves the combined path for each category.
+        Get the combined path for each category.
 
         If the path is not combined yet, execute self.combine_path to get the path.
 
-        :returns: A dictionary with keys `local_path` and `remote_path`
+        Returns:
+            combined_paths: A dictionary with keys `local_path` and `remote_path`
         """
         if not self.combined_paths:
             self.combined_paths = self.combine_path()
@@ -138,11 +110,11 @@ class ConfigLoader:
         """
         Combine paths of base_paths and the categories
 
-        Combines the `local_path` and `remote_path` for each category. 
+        Combines the `local_path` and `remote_path` for each category.
         Used for quick access the file directory.
 
-        :return: A two-level dictionary with the first level key is category name, \
-            and the second level key is `local_path` and `remote_path`.
+        Returns:
+            combined_paths: A two-level dictionary.
         """
         base_paths = self.get_base_paths()
         categories = self.get_categories()
@@ -163,48 +135,47 @@ class ConfigLoader:
 
         This method updates the `self.config` dictionary based on the given `options` dictionary.
 
-        :Example:
-        Python usage example
-        args.options = {
-            "local": "path/to/local",
-            "remote: "path/to/remote",
-            "categories": "category1, category2, category3",
-
-            # Develope option, temporary update a dict.
-            "custom_setting": {
-                "Others": {
-                    "tags": {
-                        "nice_job": "好欸！",
-                        "114514": "id_ed25519",
+        Example:
+            ### Python usage example:
+            >>> args.options = {
+                    "local": "path/to/local",
+                    "remote": "path/to/remote",
+                    "categories": "category1, category2, category3",
+                    "custom_setting": {
+                        "Others": {
+                            "tags": {
+                                "nice_job": "好欸！",
+                                "114514": "id_ed25519",
+                            }
+                        }
                     }
                 }
-            }
-        }
-        >>> config_loader.load_config()
-        >>> config_loader.update_config(args.options)
+            >>> config_loader.load_config()
+            >>> config_loader.update_config(args.options)
 
-        Command line input example
+            ### Command line input examples:
 
-        - Overwrite local_path
-        >>> python -m p5d -o local=/Users/leo/Pictures/downloads
+            Overwrite local_path:
+            $ python -m p5d -o local=/Users/leo/Pictures/downloads
 
-        - Only process specified categories
-        >>> python -m p5d -o category="Marin, IdolMaster, Others"
+            Only process specified categories:
+            $ python -m p5d -o category="Marin, IdolMaster, Others"
 
-        - Overwrite rsync parameters. Note that the directory of rsync can not be overwrite here.
-        >>> python -m p5d -o rsync="--remove-source-files -avzd"
+            Overwrite rsync parameters:
+            $ python -m p5d -o rsync="--remove-source-files -avzd"
 
-        - Specify multiple config at once
-        >>> python3 -m p5d -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
+            Specify multiple configs at once:
+            $ python3 -m p5d -o local=/Users/leo/Pictures/downloads remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others" rsync="--remove-source-files -a"
 
-        :param options: A dictionary of configuration options to update.
-        :type options: dict[str, Any]
+        Args:
+            options (dict[str, Any]): A dictionary of configuration options to update.
 
-        :raises ValueError: If the input is not a dictionary, if an invalid key is provided,
-                            or if a value for `tag_delimiter` or `file_type` is not a string.
-
-        :raises KeyError: If a key in `options` is not valid or is missing from the configuration.
+        Raises:
+            ValueError: If the input is not a dictionary, if an invalid key is provided,
+                or if a value for `tag_delimiter` or `file_type` is not a string.
+            KeyError: If a key in `options` is not valid or is missing from the configuration.
         """
+
         if not isinstance(options, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -309,6 +280,14 @@ def safe_move(src: str | Path, dst: str | Path, logger: logging.Logger) -> None:
         logger.error(f"Error occurred while moving '{src}' to '{dst}': {e}")
 
 
+def safe_rmtree(directory: Path) -> None:
+    """Delete folder if not .py file inside. Comes from deleting full project folder accidentally..."""
+    if not directory.exists():
+        return
+    if not any(file.suffix == ".py" or not is_system(file) for file in directory.glob("**/*")):
+        shutil.rmtree(directory)
+
+
 def generate_unique_path(path: Path) -> Path:
     counter = 1
     stem = path.stem
@@ -325,47 +304,43 @@ def generate_unique_path(path: Path) -> Path:
 
 def traverse_dir(
     base_path: str | Path,
+    recursive: bool = False,
     file_filter: Callable[[Path], bool] = lambda _: True,
     exclude_system_files: bool = True,
     extensions: Optional[list[str]] = None,
-    recursive: bool = True,
 ) -> Iterable[Path]:
     """
     Traverse through files in a folder and perform operations on them.
 
-    Parameters
-    ----------
-    base_path
-        The starting point for searching files.
-    file_filter
-        Function to determine if a file is valid (default is always valid).
-    exclude_system_files
-        Whether to skip system files (default is True).
-    exclude_extensions
-        List of file extensions to exclude (default is None).
-    recursive
-        Whether to search subdirectories recursively (default is True).
+    Args:
+        base_path (str or Path):
+            The starting point for searching files.
+        file_filter (Callable[[Path], bool], optional):
+            Function to determine if a file is valid. Default is a function that always returns True.
+        exclude_system_files (bool, optional):
+            Whether to skip system files. Default is True.
+        exclude_extensions (list of str, optional):
+            List of file extensions to exclude. Default is None.
+        recursive (bool, optional):
+            Whether to search subdirectories recursively. Default is False.
 
-    Yields
-    ------
-    Path
-        Files that meet all criteria.
+    Yields:
+        Path:
+            Files that meet all criteria.
 
-    Examples
-    --------
-    >>> from pathlib import Path
-    >>>
-    >>> def process_file(file_path: Path):
-    >>>     print(f"Processing file: {file_path}")
-    >>>
-    >>> # Define file filter
-    >>> def is_txt_file(file_path: Path) -> bool:
-    >>>     return file_path.suffix.lower() == '.txt'
-    >>>
-    >>> base_path = "/path/to/dir"
-    >>> extensions = ["tmp", "log"]
-    >>> for file_path in traverse_folder(base_path, file_filter=is_txt_file, exclude_extensions=extensions):
-    >>>     process_file(file_path)
+    Examples:
+        >>> from pathlib import Path
+        >>>
+        >>> def process_file(file_path: Path):
+        >>>     print(f"Processing file: {file_path}")
+        >>>
+        >>> def is_txt_file(file_path: Path) -> bool:
+        >>>     return file_path.suffix.lower() == '.txt'
+        >>>
+        >>> base_path = Path("/path/to/dir")
+        >>> extensions = ["tmp", "log"]
+        >>> for file_path in traverse_folder(base_path, file_filter=is_txt_file, exclude_extensions=extensions):
+        >>>     process_file(file_path)
     """
     base_path = Path(base_path)
     if extensions:
@@ -382,27 +357,13 @@ def traverse_dir(
             yield file_path
 
 
-def move_all_tagged(
-    base_path: Path,
-    tags: dict[str, str],
-    tag_delimiter: dict[str, str],
-    logger: logging.Logger,
-) -> None:
-    """Move tagged file for all files."""
-    for file_path in traverse_dir(base_path):
-        file_name = file_path.stem
-        file_tags = split_tags(file_name, tag_delimiter)
-        target_folder = get_tagged_path(base_path, file_tags, tags)
-        safe_move(file_path, target_folder / file_path.name, logger)
-
-
-def get_tagged_path(base_path: Path, file_tags: list[str], target_tags: dict[str, str]) -> Path:
+def get_tagged_path(category_base: Path, file_tags: list[str], target_tags: dict[str, str]) -> Path:
     """Return the target folder path based on the file tags."""
     for tag in file_tags:
         if tag in target_tags:
-            target_folder = base_path / target_tags[tag]
+            target_folder = category_base / target_tags[tag]
             return target_folder
-    return base_path / target_tags.get("others", "其他標籤")
+    return category_base / target_tags.get("others", "其他標籤")
 
 
 def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remote_path") -> int:

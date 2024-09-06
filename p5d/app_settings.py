@@ -23,6 +23,8 @@ else:
 
 # Output directory of all files.
 OUTPUT_DIR = "data"
+TEMP_DIR = os.path.join(OUTPUT_DIR, ".temp")
+MAPPING_EXT = ".txt"
 RETRIEVE_DIR = os.path.join(OUTPUT_DIR, "retrieve")
 
 # Retriever.py
@@ -42,9 +44,7 @@ WORK_DIR = "local_path"
 LOG_TEMP_EXT = ".logfile"
 
 # categorizer.py
-# Dict key name in config.toml of others
-OTHERS_NAME = "others"
 # Folder name of OtherCategorizer
 EN = "EN Artist"
 JP = "JP Artist"
-Other = "Other Artist"
+OTHER = "Other Artist"

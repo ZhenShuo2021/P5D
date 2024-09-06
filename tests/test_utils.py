@@ -21,7 +21,7 @@ class TestConfigLoader(TestBase):
         self.assertEqual(self.config_loader.config, {"TEST": {"key": "value"}})
 
     def test_load_debug(self):
-        expected_calls = [call("Configuration loaded successfully (toml)")]
+        expected_calls = [call("Configuration loaded successfully")]
 
         self.mock_logger.debug.assert_has_calls(expected_calls)
         self.assertEqual(self.mock_logger.debug.call_count, 1)
