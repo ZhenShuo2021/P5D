@@ -1,3 +1,5 @@
+file_type = ["jpg", "png", "webm"]
+
 [BASE_PATHS]
 # Windows 系統路徑「務必只能用單引號」，MacOS/Linux 無限制
 local_path = "/Users/leo/Pictures/downloads拷貝/"
@@ -91,8 +93,6 @@ remote_path = "others/雜圖"
 front = "{}_"
 between = ","
 
-[file_type]
-type = ["jpg", "png", "webm", "gif", "apng", "zip"]
 
 [custom]
 # 覆蓋預設 rsync 參數
