@@ -8,7 +8,7 @@ matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
 from p5d import app_settings, custom_logger
-from p5d.app_settings import STATS_FILE, WORK_DIR, FONT
+from p5d.app_settings import STATS_FILE, FONT
 from p5d.utils import ConfigLoader, color_text, is_system, split_tags
 
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
@@ -123,10 +123,10 @@ def count_tags(
     )
 
 
-def viewer_main(config_loader: ConfigLoader, logger: logging.Logger, file_name: str = STATS_FILE):
+def viewer_main(config_loader: ConfigLoader, logger: logging.Logger, stats_dir: str, file_name: str = STATS_FILE):
     base_path = config_loader.get_base_paths()
     tag_delimiter = config_loader.get_delimiters()
-    count_tags(base_path[WORK_DIR], tag_delimiter, logger, output_file=file_name)
+    count_tags(base_path[stats_dir], tag_delimiter, logger, output_file=file_name)
     tag_counts = read_tag_counts(file_name)
     plot_pie_chart(tag_counts, logger, 15, skip=2)  # skip since the top tags are useless
 
@@ -137,4 +137,4 @@ if __name__ == "__main__":
     config_loader = ConfigLoader(logger)
     config_loader.load_config()
 
-    viewer_main(config_loader, logger)
+    viewer_main(config_loader, logger, config_loader.get_stats_dir())

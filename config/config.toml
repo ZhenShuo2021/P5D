@@ -1,4 +1,5 @@
 file_type = ["jpg", "png", "webm"]
+stats_dir = "local_path"
 
 [BASE_PATHS]
 # Windows 系統路徑「務必只能用單引號」，MacOS/Linux 無限制

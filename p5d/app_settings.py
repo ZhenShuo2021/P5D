@@ -36,8 +36,6 @@ MISS_LOG = "id"
 # viewer.py
 # Output file name.
 STATS_FILE = "tag_stats"
-# Working directory of statistic info. Also used in main.py. Option: [local_path, remote_path].
-WORK_DIR = "local_path"
 
 # logger.py
 # Extension of temp rsync log
