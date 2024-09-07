@@ -1,10 +1,8 @@
 # p5d/__init__.py
 
 import logging
-import os
-from pathlib import Path
 
-from p5d import app_settings, categorizer, option, retriever, synchronizer, viewer
+from p5d import categorizer, option, retriever, synchronizer, viewer
 from p5d.custom_logger import setup_logging
 import p5d.utils
 
@@ -26,7 +24,7 @@ def main():
 
     if not args.no_sync:
         logger.info("開始同步檔案...")
-        synchronizer.FileSyncer(config_loader, logger, args.options, args.direct_sync).sync_folders(
+        synchronizer.FileSyncer(config_loader, logger, args.direct_sync, args.options).sync_folders(
             None, None
         )
 
@@ -36,9 +34,10 @@ def main():
 
     if not args.no_view:
         logger.info("開始統計標籤...")
-        viewer.viewer_main(config_loader, logger)
+        viewer.viewer_main(config_loader, logger, config_loader.get_stats_dir())
 
     if not args.no_categorize:
-        file_count = p5d.utils.count_files(combined_paths, logger, app_settings.WORK_DIR)
-        happy_msg = "這次新增了" if app_settings.WORK_DIR == "local_path" else "遠端資料夾總共有"
+        stats_dir = config_loader.get_stats_dir()
+        file_count = p5d.utils.count_files(combined_paths, logger, stats_dir)
+        happy_msg = "這次新增了" if stats_dir == "local_path" else "遠端資料夾總共有"
         print(f"\033[32m{happy_msg}\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")

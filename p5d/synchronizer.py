@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from p5d import custom_logger
 from p5d.app_settings import LOG_TEMP_EXT, USER_OS, TEMP_DIR
-from p5d.utils import ConfigLoader, normalize_path
+from p5d.utils import ConfigLoader, normalize_path, extract_opt
 
 
 class FileSyncer:
@@ -15,13 +15,14 @@ class FileSyncer:
         self,
         config_loader: ConfigLoader,
         logger: logging.Logger,
-        rsync_param: dict = {},
         direct_sync: bool = False,
+        args: dict = {},
     ):
         self.logger = logger
         self.output_dir = config_loader.get_output_dir()
         self.config_loader = config_loader
-        self.rsync_param = self.update_param(config_loader.get_custom(), rsync_param)
+        self.rsync_param = self.update_param(config_loader.get_custom(), args)
+        self.rsync_param = extract_opt(self.rsync_param)
         self.direct_sync = direct_sync
 
     def sync_folders(self, src: Any, dst: Any) -> None:
@@ -75,10 +76,9 @@ class FileSyncer:
 
                 command += ["--no-relative", f"--files-from={mapping_file}", "/", dst]
                 if self.rsync_param:
-                    rsync_options = self.rsync_param.split()
                     command = [
                         "rsync",
-                        *rsync_options,
+                        *self.rsync_param,
                         "--no-relative",
                         f"--files-from={mapping_file}",
                         "/",
@@ -87,24 +87,19 @@ class FileSyncer:
 
                 self.logger.debug(f"Start Syncing with command: {' '.join(command)}")
                 try:
-                    subprocess.run(
-                        command, check=True, capture_output=True, text=True, encoding="utf-8"
-                    )
+                    subprocess.run(command, check=True, text=True, encoding="utf-8")
                 except subprocess.CalledProcessError as e:
                     self.logger.error(f"Synchronization failed: {e}")
         else:
             src = normalize_path(self.add_slash(src))
             dst = normalize_path(self.add_slash(dst))
-            command += [f"--log-file={log_path}", src, dst]
             if self.rsync_param:
-                rsync_options = self.rsync_param.split()
-                command = ["rsync", *rsync_options, f"{src}", f"{dst}"]
-
+                command = ["rsync", *self.rsync_param, f"{src}", f"{dst}"]
+            else:
+                command += [f"--log-file={log_path}", src, dst]
             self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
             try:
-                subprocess.run(
-                    command, check=True, capture_output=True, text=True, encoding="utf-8"
-                )
+                subprocess.run(command, check=True, text=True, encoding="utf-8")
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Synchronization failed: {e}")
 

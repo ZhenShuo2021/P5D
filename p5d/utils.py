@@ -81,6 +81,9 @@ class ConfigLoader:
     def get_file_type(self) -> dict[str, list[str]]:
         return self.config.get("file_type", {})
 
+    def get_stats_dir(self) -> str:
+        return self.config.get("stats_dir", "")
+
     def get_output_dir(self) -> Path:
         return self.base_dir / OUTPUT_DIR
 
@@ -183,7 +186,7 @@ class ConfigLoader:
         # category is ok.
         base = ["local", "remote", "local_path", "remote_path"]
         cat = ["category", "categories"]
-        special_key = ["custom_setting", "rsync"]
+        special_key = ["custom_setting", "rsync", "stats_dir"]
         special_key.extend(base)
         special_key.extend(cat)
         for key, value in options.items():
@@ -199,7 +202,7 @@ class ConfigLoader:
             elif key in cat:
                 # Preprocess input
                 others_alias = ["Other", "others", "other"]
-                extract_value = split_options(value)
+                extract_value = extract_opt(value)
                 extract_value = [
                     "Others" if value in others_alias else value for value in extract_value
                 ]
@@ -219,18 +222,24 @@ class ConfigLoader:
                 self.logger.info(f"Input option '{key}' update successfully")
 
             elif key in ["tag_delimiter", "file_type"]:
-                extract_value = split_options(value)
+                extract_value = extract_opt(value)
                 if key == "tag_delimiter":
                     self.config[key]["front"] = extract_value[0]
                     self.config[key]["between"] = extract_value[1]
                 else:
-                    self.config[key] = split_options(value)
+                    self.config[key] = extract_opt(value)
                 self.logger.info(f"Input option '{key}' update successfully")
 
             elif key == "custom_setting":
                 # Update a category (for dev)
                 self.config["categories"].update(options[key])
                 self.logger.info(f"Input option '{key}' update successfully")
+
+            elif key == "rsync":
+                pass
+
+            elif key == "stats_dir":
+                self.config[key] = options[key]
 
         self.config_check()
 
@@ -306,8 +315,8 @@ def traverse_dir(
     base_path: str | Path,
     recursive: bool = False,
     file_filter: Callable[[Path], bool] = lambda _: True,
-    exclude_system_files: bool = True,
     extensions: Optional[list[str]] = None,
+    exclude_system_files: bool = True,
 ) -> Iterable[Path]:
     """
     Traverse through files in a folder and perform operations on them.
@@ -366,11 +375,11 @@ def get_tagged_path(category_base: Path, file_tags: list[str], target_tags: dict
     return category_base / target_tags.get("others", "其他標籤")
 
 
-def count_files(paths: dict[str, dict[str, str]], logger, work_dir: str = "remote_path") -> int:
+def count_files(paths: dict[str, dict[str, str]], logger, stats_dir: str = "remote_path") -> int:
     file_count = 0
 
     for _, path in paths.items():
-        path = Path(path[work_dir])
+        path = Path(path[stats_dir])
         if not path.is_dir():
             logger.error(f"FileNotFoundError: '{path}' does not exist or not a directory.")
         logger.debug(f"Counting number of files of '{path}'.")
@@ -415,10 +424,15 @@ def split_tags(file_name: str, tag_delimiter: dict) -> list[str]:
     return file_tags
 
 
-def split_options(value: str) -> list[str]:
-    extract_value = value.split(",")
-    extract_value = [value.replace(" ", "") for value in extract_value]
-    return extract_value
+def extract_opt(opt_str: str) -> list[str]:
+    if not opt_str:
+        return []
+    if opt_str.startswith("-"):
+        return re.split(r"\s+", opt_str.strip())
+    else:
+        opt_list = opt_str.split(",")
+        opt_list = [value.replace(" ", "") for value in opt_list]
+    return opt_list
 
 
 def normalize_path(path: str | Path) -> str:
