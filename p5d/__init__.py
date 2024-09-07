@@ -22,11 +22,13 @@ def main():
 
     if not args.no_categorize:
         logger.info("開始分類檔案...")
-        categorizer.categorize_files(config_loader, True, logger)
+        categorizer.categorize_files(config_loader, args.direct_sync, logger)
 
     if not args.no_sync:
         logger.info("開始同步檔案...")
-        synchronizer.FileSyncer(config_loader, logger, args.options).sync_folders(None, None)
+        synchronizer.FileSyncer(config_loader, logger, args.options, args.direct_sync).sync_folders(
+            None, None
+        )
 
     if not args.no_retrieve:
         logger.info("開始尋找遺失作品...")

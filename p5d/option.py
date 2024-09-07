@@ -30,6 +30,7 @@ def build_parser():
     parser.add_argument("--no-view", action="store_true", help="關閉統計標籤功能")
     parser.add_argument("--no-archive", action="store_true", help="關閉日誌功能")
     parser.add_argument("--download", action="store_true", help="尋回遺失作品後自動下載")
+    parser.add_argument("--direct_sync", action="store_true", help="直接映射到遠端目錄")
     parser.add_argument(
         "-q", "--quiet", dest="loglevel", action="store_const", const=logging.ERROR, help="安靜模式"
     )
@@ -55,6 +56,8 @@ def build_parser():
     args = parser.parse_args()
 
     options_dict = dict(args.options) if args.options else {}
+    if args.direct_sync:
+        args.no_categorize = False
     args.options = options_dict
     return args
 
