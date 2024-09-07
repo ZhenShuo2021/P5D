@@ -142,7 +142,7 @@ class ResolverAdapter:
         self.resolver_classes: dict[str, Type[PathResolver]] = {
             "category": CategoryPathResolver,
             "child": ChildPathResolver,
-            "root": FilenamePathResolver,
+            "filename": FilenamePathResolver,
             "simple": SimplePathResolver,
         }
         self.resolver_queue = deque(maxlen=2)
@@ -154,7 +154,7 @@ class ResolverAdapter:
         elif "tags" in categories[category]:
             resolver_name = "category"
         elif category == "Others":
-            resolver_name = "root"
+            resolver_name = "filename"
         else:
             resolver_name = "simple"
 
