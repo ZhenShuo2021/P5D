@@ -39,7 +39,7 @@ STATS_FILE = "tag_stats"
 
 # logger.py
 # Extension of temp rsync log
-LOG_TEMP_EXT = ".logfile"
+RSYNC_TEMP_EXT = ".logfile"
 
 # categorizer.py
 # Folder name of OtherCategorizer

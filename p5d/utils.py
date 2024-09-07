@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Any, Callable, Iterable
 import toml
 
-from p5d.app_settings import OUTPUT_DIR
+from p5d.app_settings import OUTPUT_DIR, RSYNC_TEMP_EXT
 from p5d import custom_logger
 
 HIRAGANA_START = "\u3040"
@@ -196,7 +196,7 @@ class ConfigLoader:
                 if "_path" in key:
                     key = key.replace("_path", "")
                 self.config["BASE_PATHS"][f"{key}_path"] = value
-                self.logger.info(f"Input option '{key}' update successfully")
+                self.logger.info(f"Successfully update input option '{key}'")
 
             elif key in cat:
                 # Preprocess input
@@ -212,13 +212,13 @@ class ConfigLoader:
                         valid_categories.add(category)
                     else:
                         self.logger.error(
-                            f"Input option '{category}' not found in {self.config_path}"
+                            f"Successfully update input option '{category}' not found in {self.config_path}"
                         )
 
                 categories_to_remove = set(self.config["categories"].keys()) - valid_categories
                 for category in categories_to_remove:
                     self.config["categories"].pop(category, None)
-                self.logger.info(f"Input option '{key}' update successfully")
+                self.logger.info(f"Successfully update input option '{key}'")
 
             elif key in ["tag_delimiter", "file_type"]:
                 extract_value = extract_opt(value)
@@ -227,12 +227,12 @@ class ConfigLoader:
                     self.config[key]["between"] = extract_value[1]
                 else:
                     self.config[key] = extract_opt(value)
-                self.logger.info(f"Input option '{key}' update successfully")
+                self.logger.info(f"Successfully update input option '{key}'")
 
             elif key == "custom_setting":
                 # Update a category (for dev)
                 self.config["categories"].update(options[key])
-                self.logger.info(f"Input option '{key}' update successfully")
+                self.logger.info(f"Successfully update input option '{key}'")
 
             elif key == "rsync":
                 pass
@@ -387,6 +387,51 @@ def count_files(paths: dict[str, dict[str, str]], logger, stats_dir: str = "remo
             file_count += 1
 
     return file_count
+
+
+class LogMerger:
+    def __init__(self, temp_dir: Path, logger: logging.Logger):
+        self.temp_dir = temp_dir
+        self.logger = logger
+
+    def merge_logs(self) -> None:
+        system_log_file = self.temp_dir.parent / "p5d.log"
+        rsync_log_files = [f for f in os.listdir(self.temp_dir) if f.endswith(RSYNC_TEMP_EXT)]
+
+        if not rsync_log_files:
+            self.logger.debug("No rsync log files found in the directory.")
+            return
+
+        system_log_content = self._merge_system(system_log_file)
+        rsync_log_content = self._merge_rsync(rsync_log_files)
+        merged_content = system_log_content + rsync_log_content
+
+        with open(system_log_file, "w", encoding="utf-8") as output:
+            output.write(merged_content)
+
+        self.logger.debug(f"System log and rsync logs have been merged into '{system_log_file}'")
+
+    def _merge_rsync(self, log_files: list[str]) -> str:
+        merged_content = ""
+        delimiter = "=" * 20
+        for log_file in log_files:
+            file_path = self.temp_dir / log_file
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                merged_content += f"\n{delimiter}[{log_file}]{delimiter}\n{content}"
+            os.remove(file_path)
+        return merged_content
+
+    def _merge_system(self, system_log_path: Path) -> str:
+        if not system_log_path.exists():
+            self.logger.debug(f"System log file '{system_log_path}' not found.")
+            return ""
+
+        with open(system_log_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.logger.debug(f"System log '{system_log_path}' has been read successfully.")
+        return content
 
 
 ## %

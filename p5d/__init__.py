@@ -2,9 +2,9 @@
 
 import logging
 
-from p5d import categorizer, option, retriever, synchronizer, viewer
+from p5d import categorizer, option, retriever, synchronizer, viewer, utils
 from p5d.custom_logger import setup_logging
-import p5d.utils
+from p5d.app_settings import TEMP_DIR
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
     setup_logging(args.loglevel, args.no_archive)
     logger = logging.getLogger(__name__)
 
-    config_loader = p5d.utils.ConfigLoader(logger)
+    config_loader = utils.ConfigLoader(logger)
     config_loader.load_config()
     config_loader.update_config(args.options)
     combined_paths = config_loader.get_combined_paths()
@@ -37,6 +37,8 @@ def main():
 
     if not args.no_categorize:
         stats_dir = config_loader.get_stats_dir()
-        file_count = p5d.utils.count_files(combined_paths, logger, stats_dir)
+        file_count = utils.count_files(combined_paths, logger, stats_dir)
         happy_msg = "這次新增了" if stats_dir == "local_path" else "遠端資料夾總共有"
         print(f"\033[32m{happy_msg}\033[0m\033[32;1;4m {file_count} \033[0m\033[32m個檔案🍺\033[0m")
+
+    utils.LogMerger(config_loader.base_dir / TEMP_DIR, logger).merge_logs()

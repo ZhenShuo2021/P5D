@@ -2,115 +2,75 @@
 import logging
 import os
 import subprocess
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from p5d import custom_logger
-from p5d.app_settings import LOG_TEMP_EXT, USER_OS, TEMP_DIR
+from p5d.app_settings import RSYNC_TEMP_EXT, USER_OS, TEMP_DIR
 from p5d.utils import ConfigLoader, normalize_path, extract_opt
 
 
-class FileSyncer:
-    def __init__(
-        self,
-        config_loader: ConfigLoader,
-        logger: logging.Logger,
-        direct_sync: bool = False,
-        args: dict = {},
-    ):
-        self.logger = logger
-        self.output_dir = config_loader.get_output_dir()
+class SyncStrategy(ABC):
+    def __init__(self) -> None:
+        self.cmd_base = ["rsync", "-aq", "--ignore-existing", "--progress"]
+
+    @abstractmethod
+    def sync(self, src: Path, dst: Path, log_path: Path) -> None:
+        pass
+
+
+class RsyncStrategy(SyncStrategy):
+    def __init__(self, rsync_param: list[str]) -> None:
+        super().__init__()
+        self.rsync_param = rsync_param
+
+    def sync(self, src: Path, dst: Path, log_path: Path) -> None:
+        cmd = self.cmd_base + [f"--log-file={log_path}", str(_add_slash(src)), str(dst)]
+        if self.rsync_param:
+            cmd = ["rsync"] + self.rsync_param + [str(src), str(dst)]
+
+        try:
+            subprocess.run(cmd, check=True, text=True, encoding="utf-8")
+        except subprocess.CalledProcessError as e:
+            raise SyncError(f"Synchronization failed: {e}")
+
+
+class DirectSyncStrategy(SyncStrategy):
+    def __init__(self, rsync_param: list[str], config_loader: ConfigLoader):
+        super().__init__()
+        self.rsync_param = rsync_param
         self.config_loader = config_loader
-        self.rsync_param = self.update_param(config_loader.get_custom(), args)
-        self.rsync_param = extract_opt(self.rsync_param)
-        self.direct_sync = direct_sync
 
-    def sync_folders(self, src: Any, dst: Any) -> None:
-        """Sync folder with rsync."""
-        if not src:
-            self.sync_folders_all()
-        else:
-            src, dst = Path(src), Path(dst)
-            if not self.direct_sync:
-                if not src.is_dir():
-                    self.logger.error(f"Syncing file error: local folder '{src}' not exist.")
-                if not dst.is_dir():
-                    self.logger.debug(f"Create nonexisting target folder '{str(self.output_dir)}'.")
-                    dst.mkdir(parents=True, exist_ok=True)
+    def sync(self, src: str | Path, dst: str | Path, log_path: Path) -> None:
+        while True:
+            dst = self._process_mapping_file()  # type: ignore
+            if dst is None:
+                break
 
-            log_path = self._log_name(self.output_dir, src)
-            self._run_rsync(src, dst, log_path)
+            Path(dst).mkdir(parents=True, exist_ok=True)
+            dst = normalize_path(_add_slash(dst))
+            mapping_file = normalize_path(
+                os.path.join(self.config_loader.base_dir, TEMP_DIR, "files.txt")
+            ).rstrip("/")
 
-    def sync_folders_all(self) -> None:
-        combined_paths = self.config_loader.get_combined_paths()
-        for key in combined_paths:
-            if not combined_paths.get(key, {}).get("local_path", {}):
-                self.logger.error(
-                    f"Local path of '{combined_paths[key]}' not found, continue to prevent infinite loop."
-                )
-                continue
-            self.sync_folders(combined_paths[key]["local_path"], combined_paths[key]["remote_path"])
-        log_merger = LogMerger(self.output_dir, self.logger)
-        log_merger.merge_logs()
+            if not os.path.getsize(os.path.join(TEMP_DIR, "files.txt")):
+                break
 
-    def _log_name(self, output_dir: Path, src: Path) -> str:
-        if not output_dir.is_dir():
-            output_dir.mkdir(parents=True, exist_ok=True)
-            self.logger.debug(f"Creates folder '{output_dir}'")
-        return os.path.join(str(output_dir), f"{os.path.basename(src)}{LOG_TEMP_EXT}")
-
-    def _run_rsync(self, src: str | Path, dst: str | Path, log_path: str | Path) -> None:
-        cmd_default = ["rsync", "-aq", "--ignore-existing", "--progress"]
-        if self.direct_sync:
-            while True:
-                dst = self._process_mapping_file()  # type: ignore
-                if dst is None:
-                    break
-                Path(dst).mkdir(parents=True, exist_ok=True)
-                dst = normalize_path(self.add_slash(dst))
-                mapping_file = normalize_path(
-                    os.path.join(self.config_loader.base_dir, TEMP_DIR, "files.txt")
-                ).rstrip("/")
-
-                if not os.path.getsize(os.path.join(TEMP_DIR, "files.txt")):
-                    self.logger.debug("Mapping file is empty or only contains blank lines.")
-                    break
-
-                command = cmd_default + [
-                    "--no-relative",
-                    f"--files-from={mapping_file}",
-                    "/",
-                    dst,
-                ]
-                if self.rsync_param:
-                    command = [
-                        "rsync",
-                        *self.rsync_param,
-                        "--no-relative",
-                        f"--files-from={mapping_file}",
-                        "/",
-                        dst,
-                    ]
-
-                self.logger.debug(f"Start Syncing with command: {' '.join(command)}")
-                try:
-                    subprocess.run(command, check=True, text=True, encoding="utf-8")
-                except subprocess.CalledProcessError as e:
-                    self.logger.error(f"Synchronization failed: {e}")
-        else:
-            src = normalize_path(self.add_slash(src))
-            dst = normalize_path(self.add_slash(dst))
+            cmd = self.cmd_base + ["--no-relative", f"--files-from={mapping_file}", "/", dst]
             if self.rsync_param:
-                command = ["rsync", *self.rsync_param, f"{src}", f"{dst}"]
-            else:
-                command = cmd_default + [f"--log-file={log_path}", src, dst]
-            self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
-            try:
-                subprocess.run(command, check=True, text=True, encoding="utf-8")
-            except subprocess.CalledProcessError as e:
-                self.logger.error(f"Synchronization failed: {e}")
+                cmd = (
+                    ["rsync"]
+                    + self.rsync_param
+                    + ["--no-relative", f"--files-from={mapping_file}", "/", dst]
+                )
 
-    def _process_mapping_file(self) -> Optional[str]:
+            try:
+                subprocess.run(cmd, check=True, text=True, encoding="utf-8")
+            except subprocess.CalledProcessError as e:
+                raise SyncError(f"Synchronization failed: {e}")
+
+    def _process_mapping_file(self) -> str | None:
         filename = os.path.join(TEMP_DIR, "mapping.txt")
         with open(filename, "r", encoding="utf-8") as file:
             lines = file.readlines()
@@ -137,43 +97,69 @@ class FileSyncer:
             file.writelines(remaining_lines)
         return key
 
-    def update_param(self, file_input: dict[str, str], cmd_input: dict[str, str]) -> str:
-        """Overwrite rsync parameter"""
+
+class FileSyncer:
+    def __init__(
+        self,
+        config_loader: ConfigLoader,
+        logger: logging.Logger,
+        direct_sync: bool = False,
+        args: dict[str, Any] = {},
+    ):
+        self.logger = logger
+        self.config_loader = config_loader
+        rsync_param = self._update_param(config_loader.get_custom(), args)
+        rsync_param = extract_opt(rsync_param)
+
+        if direct_sync:
+            self.sync_strategy = DirectSyncStrategy(rsync_param, config_loader)
+        else:
+            self.sync_strategy = RsyncStrategy(rsync_param)
+
+    def sync_folders(self, src: Any, dst: Any) -> None:
+        if not src:
+            self.sync_folders_all()
+        else:
+            src, dst = Path(src), Path(dst)
+            if not isinstance(self.sync_strategy, DirectSyncStrategy):
+                if not src.is_dir():
+                    raise SyncError(f"Syncing file error: local folder '{src}' does not exist.")
+                if not dst.is_dir():
+                    self.logger.debug(f"Create nonexisting target folder '{str(dst)}'.")
+                    dst.mkdir(parents=True, exist_ok=True)
+
+            log_path = self._log_name(self.config_loader.base_dir / TEMP_DIR, src)
+            try:
+                self.sync_strategy.sync(src, dst, log_path)
+            except SyncError as e:
+                self.logger.error(str(e))
+
+    def sync_folders_all(self) -> None:
+        combined_paths = self.config_loader.get_combined_paths()
+        for key, paths in combined_paths.items():
+            if not paths.get("local_path"):
+                self.logger.error(
+                    f"Local path of '{paths}' not found, continue to prevent infinite loop."
+                )
+                continue
+            self.sync_folders(paths["local_path"], paths["remote_path"])
+
+    def _log_name(self, output_dir: Path, src: Path) -> Path:
+        if not output_dir.is_dir():
+            output_dir.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Creates folder '{output_dir}'")
+        return output_dir / f"{src.name}{RSYNC_TEMP_EXT}"
+
+    def _update_param(self, file_input: dict[str, str], cmd_input: dict[str, str]) -> str:
         return cmd_input.get("rsync", "") or file_input.get("rsync", "") or ""
 
-    def add_slash(self, path: str | Path) -> str:
-        return rf"{str(path)}\\" if USER_OS == "Windows" else f"{str(path)}/"
+
+def _add_slash(path: str | Path) -> str:
+    return rf"{path}\\" if USER_OS == "Windows" else f"{path}/"
 
 
-class LogMerger:
-    def __init__(self, output_dir: Path, logger: logging.Logger):
-        self.output_dir = output_dir
-        self.logger = logger
-
-    def merge_logs(self) -> None:
-        output_file = self.output_dir / Path("rsync.log")
-        log_files = [f for f in os.listdir(self.output_dir) if f.endswith(LOG_TEMP_EXT)]
-
-        if not log_files:
-            self.logger.debug("No log files found in the directory.")
-            return
-
-        merged_content = self._merge_log_files(log_files)
-        with open(output_file, "w", encoding="utf-8") as output:
-            output.write(merged_content)
-        self.logger.debug(f"All logs have been merged into '{output_file}'")
-
-    def _merge_log_files(self, log_files: list) -> str:
-        merged_content = ""
-        for log_file in log_files:
-            file_path = os.path.join(self.output_dir, log_file)
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                merged_content += (
-                    f"====================[{log_file}]====================\n\n{content}"
-                )
-            os.remove(file_path)
-        return merged_content
+class SyncError(Exception):
+    pass
 
 
 if __name__ == "__main__":
