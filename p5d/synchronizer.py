@@ -68,13 +68,20 @@ class FileSyncer:
                     break
                 Path(dst).mkdir(parents=True, exist_ok=True)
                 dst = normalize_path(self.add_slash(dst))
-                mapping_file = os.path.join(TEMP_DIR, "files.txt")
+                mapping_file = normalize_path(
+                    os.path.join(self.config_loader.base_dir, TEMP_DIR, "files.txt")
+                ).rstrip("/")
 
                 if not os.path.getsize(os.path.join(TEMP_DIR, "files.txt")):
                     self.logger.debug("Mapping file is empty or only contains blank lines.")
                     break
 
-                command = cmd_default + ["--no-relative", f"--files-from={mapping_file}", "/", dst]
+                command = cmd_default + [
+                    "--no-relative",
+                    f"--files-from={mapping_file}",
+                    "/",
+                    dst,
+                ]
                 if self.rsync_param:
                     command = [
                         "rsync",
