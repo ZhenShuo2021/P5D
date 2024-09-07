@@ -20,7 +20,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 def read_tag_counts(file_name: str) -> Counter:
-    file_name = "./" + app_settings.OUTPUT_DIR + "/" + file_name + ".txt"
+    file_name = os.path.join(app_settings.OUTPUT_DIR, file_name + ".txt")
     tag_counts = Counter()
     with open(file_name, "r", encoding="utf-8") as file:
         for line in file:
@@ -123,7 +123,9 @@ def count_tags(
     )
 
 
-def viewer_main(config_loader: ConfigLoader, logger: logging.Logger, stats_dir: str, file_name: str = STATS_FILE):
+def viewer_main(
+    config_loader: ConfigLoader, logger: logging.Logger, stats_dir: str, file_name: str = STATS_FILE
+):
     base_path = config_loader.get_base_paths()
     tag_delimiter = config_loader.get_delimiters()
     count_tags(base_path[stats_dir], tag_delimiter, logger, output_file=file_name)

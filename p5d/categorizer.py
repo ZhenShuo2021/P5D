@@ -189,7 +189,9 @@ def categorize_files(config_loader: ConfigLoader, direct_sync: bool, logger: Log
                 safe_move(file_src, file_dst, logger)
 
     if direct_sync:
-        write_mapping(mapping_file, os.path.join(TEMP_DIR, "mapping.txt"))
+        temp_dir_abs = Path(config_loader.base_dir) / TEMP_DIR
+        temp_dir_abs.mkdir(exist_ok=True, parents=True)
+        write_mapping(mapping_file, str(temp_dir_abs / "mapping.txt"))
 
 
 def add_to_sync(

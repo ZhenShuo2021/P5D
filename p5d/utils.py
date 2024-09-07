@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional, Any, Callable, Iterable
 import toml
 
-from config.config import config as user_config
 from p5d.app_settings import OUTPUT_DIR
 from p5d import custom_logger
 

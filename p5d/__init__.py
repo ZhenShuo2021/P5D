@@ -24,9 +24,8 @@ def main():
 
     if not args.no_sync:
         logger.info("開始同步檔案...")
-        synchronizer.FileSyncer(config_loader, logger, args.direct_sync, args.options).sync_folders(
-            None, None
-        )
+        syncer = synchronizer.FileSyncer(config_loader, logger, args.direct_sync, args.options)
+        syncer.sync_folders(None, None)
 
     if not args.no_retrieve:
         logger.info("開始尋找遺失作品...")

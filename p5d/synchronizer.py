@@ -60,7 +60,7 @@ class FileSyncer:
         return os.path.join(str(output_dir), f"{os.path.basename(src)}{LOG_TEMP_EXT}")
 
     def _run_rsync(self, src: str | Path, dst: str | Path, log_path: str | Path) -> None:
-        command = ["rsync", "-aq", "--ignore-existing", "--progress"]
+        cmd_default = ["rsync", "-aq", "--ignore-existing", "--progress"]
         if self.direct_sync:
             while True:
                 dst = self._process_mapping_file()  # type: ignore
@@ -74,7 +74,7 @@ class FileSyncer:
                     self.logger.debug("Mapping file is empty or only contains blank lines.")
                     break
 
-                command += ["--no-relative", f"--files-from={mapping_file}", "/", dst]
+                command = cmd_default + ["--no-relative", f"--files-from={mapping_file}", "/", dst]
                 if self.rsync_param:
                     command = [
                         "rsync",
@@ -96,7 +96,7 @@ class FileSyncer:
             if self.rsync_param:
                 command = ["rsync", *self.rsync_param, f"{src}", f"{dst}"]
             else:
-                command += [f"--log-file={log_path}", src, dst]
+                command = cmd_default + [f"--log-file={log_path}", src, dst]
             self.logger.debug(f"Start Syncing '{src}' to '{dst}'.")
             try:
                 subprocess.run(command, check=True, text=True, encoding="utf-8")
@@ -163,7 +163,7 @@ class LogMerger:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 merged_content += (
-                    f"\n\n====================[{log_file}]====================\n\n{content}"
+                    f"====================[{log_file}]====================\n\n{content}"
                 )
             os.remove(file_path)
         return merged_content

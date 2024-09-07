@@ -44,8 +44,6 @@ pip install -r requirements.txt                     # 安裝依賴套件
 4. children: 用於作品有多個分支。children 的檔案會全部移動到該分類的資料夾
 5. tag_delimiter: 設定第一個標籤和標籤之間的分隔符號，依照[命名規則](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E4%BE%BF%E6%8D%B7%E5%8A%9F%E8%83%BD?id=%e5%84%b2%e5%ad%98%e5%92%8c%e8%bc%89%e5%85%a5%e5%91%bd%e5%90%8d%e8%a6%8f%e5%89%87)設定
 
-py 和 toml 是相同的，喜歡哪種就用哪種。
-
 > [!CAUTION]
 > 下載資料夾中第一層的所有圖片檔會被放進 others 資料夾。
 
@@ -105,7 +103,7 @@ toml 中 `BASE_PATHS` 括弧改成單括弧 `'`
 
 ### Roadmap
 - [x] unittest
-- [ ] 優化遠端同步流程
+- [x] 優化遠端同步流程
 - [x] retriever 支援 `gallery-dl` 一鍵下載
 - [x] 同步功能支援 Windows ([cwrsync](https://www.cnblogs.com/michael9/p/11820919.html))
 - [ ] 整合 `magick`, `imageoptim` 後處理
