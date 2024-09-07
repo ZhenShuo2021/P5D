@@ -8,9 +8,6 @@ from tests.test_base import TestBase, TEST_LOCAL, TEST_REMOTE
 class TestConfigLoader(TestBase):
     def setUp(self):
         super().setUp()
-        self.config_loader.load_config()
-        self.config_loader.update_config(self.file_base)
-        self.config_loader.update_config(self.categories_path)
 
     @patch("builtins.open", new_callable=mock_open, read_data='[TEST]\nkey = "value"')
     @patch("toml.load")

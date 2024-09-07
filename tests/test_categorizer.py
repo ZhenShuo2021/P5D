@@ -1,10 +1,9 @@
 import random
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, call
 
 from p5d.app_settings import EN, JP, OTHER
-from p5d.utils import safe_move, safe_rmtree
+from p5d.utils import safe_move
 from p5d.categorizer import (
     FilenamePathResolver,
     CategoryPathResolver,
@@ -12,7 +11,7 @@ from p5d.categorizer import (
     SimplePathResolver,
     ResolverAdapter,
 )
-from tests.test_base import TestBase, TEST_LOCAL, TEST_REMOTE
+from tests.test_base import TestBase
 
 
 class TestResolverAdapter(TestBase):
