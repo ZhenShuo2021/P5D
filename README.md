@@ -1,6 +1,6 @@
 # P5D - Pixiv Post Processor of Powerful Pixiv Downloader
 [Powerful Pixiv Downloader](https://github.com/xuejianxianzun/PixivBatchDownloader) 的後處理腳本。
-解決 Powerful Pixiv Downloader 下載資料夾混亂，需要手動整理的問題。把作品依照分類的檔案再細分成各個標籤，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
+解決 Powerful Pixiv Downloader 下載資料夾需要手動整理的問題。把作品依照分類的檔案再細分成各個標籤，比如 `原神` 和 `崩鐵` 分為兩個資料夾儲存，再依據 `人物` 進行分類，此外還附加一些小功能。
 
 ## 特色
 📁 分類：根據角色分類到不同資料夾  
@@ -10,7 +10,7 @@
 🌐 跨平台：Windows/Mac/Linux 全平台支援！  
 
 ## 安裝
-需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 要版的rsync 是 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
+需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 版的rsync 是 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
 
 <details>
 <summary> cwrsync 設定 </summary>
@@ -45,7 +45,7 @@ pip install -r requirements.txt                     # 安裝依賴套件
 5. tag_delimiter: 設定第一個標籤和標籤之間的分隔符號，依照[命名規則](https://xuejianxianzun.github.io/PBDWiki/#/zh-tw/%E4%BE%BF%E6%8D%B7%E5%8A%9F%E8%83%BD?id=%e5%84%b2%e5%ad%98%e5%92%8c%e8%bc%89%e5%85%a5%e5%91%bd%e5%90%8d%e8%a6%8f%e5%89%87)設定
 
 > [!CAUTION]
-> 下載資料夾中第一層的所有圖片檔會被放進 others 資料夾。
+> 資料夾第一層副檔名為 `file_type` 的檔案會被放進 others 資料夾。
 
 ## 使用
 Powerful Pixiv Downloader 下載完成後執行 `run.py`
@@ -63,6 +63,8 @@ options:
   --no-view                關閉統計標籤功能
   --no-archive             關閉日誌功能
   --download               尋回遺失作品後自動下載
+  --direct_sync            跳過本地分類直接映射到遠端目錄
+  --stats_dir              統計檔案的工作目錄
   -q, --quiet              安靜模式
   -v, --verbose            偵錯模式
   -o, --options key=value  其他選項
@@ -72,9 +74,9 @@ options:
                            category: 處理指定分類
 ```
 
-使用範例：不統計標籤，下載遺失作品，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
+使用範例：不統計標籤，下載遺失作品，啟用 direct_sync，修改 local 和 remote 路徑，只處理指定分類的檔案，rsync使用"--remove-source-files -a"參數。
 ```sh
-python3 run.py --no-view --download -o local=/Users/leo/Pictures/downloads拷貝3 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
+python3 run.py --no-view --download --direct-sync -o local=/Users/leo/Pictures/downloads拷貝 remote=/Users/leo/Downloads/TestInput category="Marin, IdolMaster, Others"  rsync="--remove-source-files -a"
 ```
 
 > [!NOTE]
@@ -85,10 +87,11 @@ python3 run.py --no-view --download -o local=/Users/leo/Pictures/downloads拷貝
 > 預設不下載遺失作品因為 [gallery-dl](https://github.com/mikf/gallery-dl) 功能更完善。使用 `gallery-dl -I id_retrieve.txt` 可以一鍵下載。
 
 ## 進階設定
-- 分類：可以在 `categorizer.py` 修改 `CustomCategorizer` 和 `get_categorizer` 自訂分類方式。  
+- 分類：可以在 `categorizer.py` 修改 `CustomPathResolver` 和 `ResolverAdapter` 自訂分類方式。  
 - 同步：rsync 參數可參考[這裡](https://ysc.goalsoft.com.tw/blog-detail.php?target=back&no=49)。  
 - 搜尋：根據文件尋找 danbooru 是否有對應作品，如果有其他可依據 pixiv id 搜尋作品的網站也歡迎提供，目前只有找到 danbooru 有提供 API。  
 - 檢視：檢視作品標籤比例，在 data 資料夾生成 tag_stats.jpg 和 tag_stats.txt，可以看你平常都看了啥。  
+- 作為一般標籤分類使用：設定 `-o category="Others"` 可當作一般檔名分類器使用。  
 
 # TroubleShooting
 - ImportError: DLL load failed while importing _cext: 找不到指定的模組。  
