@@ -111,9 +111,7 @@ class ChildPathResolver(PathResolver):
 
     def category_iter(self, category: str) -> Iterator[tuple[Path, Path]]:
         base_path, _ = self.get_config(category)
-        child_paths = [
-            base_path.parent / child for child in self.categories[category]["children"]
-        ]
+        child_paths = [base_path.parent / child for child in self.categories[category]["children"]]
         for child_path in child_paths:
             for file_src in traverse_dir(child_path):
                 destinations = self.get_destinations(category, file_src)
@@ -151,9 +149,7 @@ class ResolverAdapter:
         self.resolver_queue = deque(maxlen=2)
         self.resolver_cache: dict[str, PathResolver] = {}
 
-    def get_resolver(
-        self, category: str, categories: dict[str, dict[str, str]]
-    ) -> PathResolver:
+    def get_resolver(self, category: str, categories: dict[str, dict[str, str]]) -> PathResolver:
         if "children" in categories[category]:
             resolver_name = "child"
         elif "tags" in categories[category]:
@@ -163,9 +159,7 @@ class ResolverAdapter:
         else:
             resolver_name = "simple"
 
-        self.logger.debug(
-            f"Processing '{category}' with path resolver '{resolver_name}'"
-        )
+        self.logger.debug(f"Processing '{category}' with path resolver '{resolver_name}'")
 
         if resolver_name in self.resolver_cache:
             return self.resolver_cache[resolver_name]
@@ -191,9 +185,7 @@ def categorize_files(config_loader: ConfigLoader, direct_sync: bool, logger: Log
         path_resolver = adapter.get_resolver(category, categories)
         for file_src, file_dst in path_resolver.category_iter(category):
             if direct_sync:
-                mapping_file = add_to_sync(
-                    mapping_file, str(file_src), str(file_dst.parent)
-                )
+                mapping_file = add_to_sync(mapping_file, str(file_src), str(file_dst.parent))
             else:
                 safe_move(file_src, file_dst, logger)
 
@@ -217,7 +209,8 @@ def write_mapping(mapping: dict[str, list[str]], file_path: str) -> None:
         for file_dst, file_srcs in mapping.items():
             f.write(f"[key]{file_dst}\n")
             for file_src in file_srcs:
-                f.write(f"[value]{normalize_path(file_src).rstrip("/")}\n")
+                normalized_path = normalize_path(file_src).rstrip("/")
+                f.write(f"[value]{normalized_path}\n")
 
 
 def main():
