@@ -13,13 +13,18 @@
             },
             "envFile": "${workspaceFolder}/.env",
             "args": [
-                // "-v",
-                // "--download",
+                // "-q",
+                "--download",
+                // "--no-categorize",
                 // "--no-sync",
+                // "--no-retrieve",
+                // "--no-view",
                 // "--no-archive",
+                // "--direct_sync",
                 // "-o",
-                // "category=Others"
                 // "local=/Users/leo/Pictures/downloads拷貝3",
+                // "rsync=-a -v"
+                // "category=others"
                 ]
         }
     ]

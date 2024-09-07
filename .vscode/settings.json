@@ -24,6 +24,7 @@
       "lxml",
       "magick",
       "MSVC",
+      "srcs",
       "sysdm"
     ],
     "editor.selectionClipboard": false, // 關閉滑鼠滾輪中鍵複製功能
