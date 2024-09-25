@@ -10,13 +10,25 @@
 import os
 import platform
 
+
+def is_docker() -> bool:
+    path = "/proc/self/cgroup"
+    return (
+        os.path.exists("/.dockerenv")
+        or os.path.isfile(path)
+        and any("docker" in line for line in open(path))
+    )
+
+
 USER_OS = platform.system()
 
 if USER_OS == "Windows":
     FONT = "Microsoft YaHei"
 elif USER_OS == "Darwin":
     # MacOS
-    FONT = "Arial Unicode MS"
+    FONT = "NotoSansOriya"
+elif is_docker():
+    FONT = "Noto Sans CJK JP"
 else:
     FONT = "Arial Unicode MS"
 

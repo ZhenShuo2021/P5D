@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Any, Callable, Iterable
 import toml
 
-from p5d.app_settings import OUTPUT_DIR, RSYNC_TEMP_EXT
+from p5d.app_settings import OUTPUT_DIR, RSYNC_TEMP_EXT, is_docker
 from p5d import custom_logger
 
 HIRAGANA_START = "\u3040"
@@ -47,6 +47,9 @@ class ConfigLoader:
                 self.config = toml.load(file)
                 self.config_check()
                 self.logger.debug("Configuration loaded successfully")
+            if is_docker():
+                self.config["BASE_PATHS"]["local_path"] = "/mnt/local_path"
+                self.config["BASE_PATHS"]["remote_path"] = "/mnt/remote_path"
         except Exception as e:
             self.logger.error(f"Failed to load configuration: {e}")
             raise
