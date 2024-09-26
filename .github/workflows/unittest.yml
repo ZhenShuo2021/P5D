@@ -1,4 +1,4 @@
-name: Run Python Unit Tests on Multiple Platforms
+name: Python Test
 on:
   push:
     branches:

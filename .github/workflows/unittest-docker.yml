@@ -1,0 +1,45 @@
+name: Docker Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: false
+        load: true
+        tags: p5d:test
+
+    - name: Create test directories
+      run: |
+        mkdir -p test_local_folder
+        mkdir -p test_remote_folder
+
+    - name: Run Docker container and execute tests
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}/test_local_folder:/mnt/local_folder \
+          -v ${{ github.workspace }}/test_remote_folder:/mnt/remote_folder \
+          --entrypoint python p5d:test -m unittest discover -s tests -p "*.py"
+
+    - name: Clean up
+      run: |
+        rm -rf test_local_folder
+        rm -rf test_remote_folder

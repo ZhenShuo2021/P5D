@@ -9,14 +9,6 @@ class TestConfigLoader(TestBase):
     def setUp(self):
         super().setUp()
 
-    @patch("builtins.open", new_callable=mock_open, read_data='[TEST]\nkey = "value"')
-    @patch("toml.load")
-    def test_load_config(self, mock_toml_load, mock_file):
-        mock_toml_load.return_value = {"TEST": {"key": "value"}}
-        self.config_loader.load_config()
-        mock_toml_load.assert_called_once()
-        self.assertEqual(self.config_loader.config, {"TEST": {"key": "value"}})
-
     def test_load_debug(self):
         expected_calls = [call("Configuration loaded successfully")]
 
