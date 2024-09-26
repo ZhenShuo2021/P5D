@@ -8,31 +8,54 @@
 🔍 搜尋：到 danbooru 搜尋並且下載遺失的作品  
 📊 檢視：作品標籤比例  
 🌐 跨平台：Windows/Mac/Linux 全平台支援！  
+🐳 Docker：現在也可以在 Docker 上運行！
 
-## 安裝
-需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)。Windows 版的rsync 是 [cwrsync](https://itefix.net/cwrsync/client/downloads)。
+## 安裝和執行
+安裝分成 Python 安裝和 Docker 安裝，如果電腦已經配置好 Docker 再用 Docker 安裝會比較輕鬆，否則選擇 Python 安裝。
 
-<details>
-<summary> cwrsync 設定 </summary>
-下載完成後解壓縮重新命名資料夾成 cwrsync，放到 `C:\app`，有兩種方法設定：
-
-1. 用系統管理員身分執行 PowerShell，輸入
-```sh
-$newPath = "C:\app\cwrsync\bin"
-
-[System.Environment]::SetEnvironmentVariable("PATH", "$([System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine));$newPath", [System.EnvironmentVariableTarget]::Machine)
-```
-
-2. 執行 `sysdm.cpl`，點擊 `進階` > `環境變數` > 系統變數中找到 `PATH` > 點擊新增輸入 `C:\app\cwrsync\bin` > 點選兩個確認以及關閉 cmd 刷新。
-</details>
-
-安裝完成後使用以下指令安裝腳本：
+### Python
+需求：[Python](https://liaoxuefeng.com/books/python/install/) 和 [rsync](https://formulae.brew.sh/formula/rsync)，安裝完成後使用以下指令安裝腳本：
 ```sh
 git clone -q https://github.com/ZhenShuo2021/P5D    # 或是直接下載 repo
 cd P5D                                              # 進入資料夾
 python -m venv .venv                                # 創建虛擬環境，下一步是進入虛擬環境
 source .venv/bin/activate                           # Windows指令: .venv\Scripts\activate
 pip install -r requirements.txt                     # 安裝依賴套件
+python3 run.py                                      # 執行腳本
+```
+
+<details>
+<summary> Windows 安裝 rsync </summary>
+
+有使用指令或者圖形介面兩種方式
+1. 指令：用系統管理員身分執行 PowerShell
+```sh
+# 下載 cwrsync
+$zipUrl = "https://itefix.net/download/free/cwrsync_6.3.1_x64_free.zip"
+$zipPath = "C:\app\cwrsync.zip"
+$newPath = "C:\app\cwrsync\bin"
+Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath
+
+# 建立資料夾並且解壓縮
+New-Item -Path "C:\app" -ItemType Directory -Force
+Expand-Archive -Path $zipPath -DestinationPath "C:\app\cwrsync"
+Remove-Item -Path $zipPath
+
+[System.Environment]::SetEnvironmentVariable("PATH", "$([System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine));$newPath", [System.EnvironmentVariableTarget]::Machine)
+```
+
+2. 圖形介面：在 https://itefix.net/cwrsync/client/downloads 下載完成後解壓縮，重新命名資料夾為 cwrsync，放到 C:\app 資料夾中，執行 `sysdm.cpl`，點擊 `進階` > `環境變數` > 系統變數中找到 `PATH` > 點擊新增輸入 `C:\app\cwrsync\bin` > 點選兩個確認以及關閉 cmd 刷新。
+</details>
+
+### Docker
+需求：[Docker Desktop](https://www.docker.com/products/docker-desktop/)，安裝完成後使用以下指令安裝腳本：
+```sh
+git clone -q https://github.com/ZhenShuo2021/P5D    # 或是直接下載 repo
+cd P5D                                              # 進入資料夾
+docker build -t p5d .                               # 建立鏡像
+docker run -v /path/to/local:/mnt/local_path \      # 執行，冒號左邊設定資料夾位置
+-v /path/to/remote:/mnt/remote_path \
+-v /path/to/output:/app/data -it p5d
 ```
 
 ## 基礎設定
@@ -47,8 +70,8 @@ pip install -r requirements.txt                     # 安裝依賴套件
 > [!CAUTION]
 > 資料夾第一層副檔名為 `file_type` 的檔案會被放進 others 資料夾。
 
-## 使用
-Powerful Pixiv Downloader 下載完成後執行 `run.py`
+## 使用範例
+Powerful Pixiv Downloader 下載完成後執行 `run.py`，預設執行除了下載以外的所有功能
 ```sh
 source .venv/bin/activate && python3 run.py
 ```
@@ -111,3 +134,4 @@ toml 中 `BASE_PATHS` 括弧改成單括弧 `'`
 - [x] 同步功能支援 Windows ([cwrsync](https://www.cnblogs.com/michael9/p/11820919.html))
 - [ ] 整合 `magick`, `imageoptim` 後處理
 - [ ] 整合檔案自動識別標籤
+- [x] 支援 Docker 安裝
